@@ -1,0 +1,128 @@
+// Database schema written in dbdiagram language
+// Generated for PostgreSQL compatibility
+
+Table asset_types {
+  pkid UUID [pk]
+  tenant_pkid UUID [not null]
+  name varchar(100)
+  category varchar(100)
+  properties_schema jsonb
+  created_at timestamp [default: `now()`]
+  updated_at timestamp
+  indexes {
+    (tenant_pkid, name) [unique]
+  }
+}
+
+Table locations {
+  pkid UUID [pk]
+  tenant_pkid UUID [not null]
+  name varchar(100)
+  parent_location_pkid UUID [ref: > locations.pkid]
+  hierarchy_level integer [default: 0]
+  is_active boolean [default: true]
+  created_at timestamp [default: `now()`]
+  indexes {
+    (tenant_pkid, parent_location_pkid)
+    hierarchy_level
+  }
+}
+
+Table assets {
+  pkid UUID [pk]
+  tenant_pkid UUID [not null]
+  asset_code varchar(50) [unique]
+  name varchar(255)
+  asset_type_pkid UUID [ref: > asset_types.pkid]
+  location_pkid UUID [ref: > locations.pkid]
+  status varchar(20) [note: "active/inactive/maintenance"]
+  properties jsonb
+  created_at timestamp [default: `now()`]
+  updated_at timestamp
+  indexes {
+    (tenant_pkid, asset_type_pkid)
+    (tenant_pkid, location_pkid)
+    asset_code [unique]
+  }
+}
+
+Table asset_activities {
+  pkid UUID [pk]
+  tenant_pkid UUID [not null]
+  asset_pkid UUID [ref: > assets.pkid]
+  activity_type varchar(50) [note: "maintenance/calibration/inspection"]
+  status varchar(20) [note: "pending/completed/failed"]
+  scheduled_date timestamp
+  completed_date timestamp
+  created_at timestamp [default: `now()`]
+  indexes {
+    (tenant_pkid, asset_pkid, status)
+    scheduled_date
+  }
+}
+
+Table asset_sensors {
+  pkid UUID [pk]
+  tenant_pkid UUID [not null]
+  asset_pkid UUID [ref: > assets.pkid]
+  name varchar(100)
+  sensor_type varchar(50)
+  last_reading_value decimal(15,6)
+  last_reading_time timestamp
+  created_at timestamp [default: `now()`]
+  indexes {
+    (tenant_pkid, asset_pkid)
+  }
+}
+
+Table sensor_thresholds {
+  pkid UUID [pk]
+  tenant_pkid UUID [not null]
+  asset_sensor_pkid UUID [ref: > asset_sensors.pkid]
+  min_value decimal(15,6)
+  max_value decimal(15,6)
+  severity varchar(20) [note: "warning/critical"]
+  created_at timestamp [default: `now()`]
+  indexes {
+    (tenant_pkid, asset_sensor_pkid)
+  }
+}
+
+Table asset_sensor_readings {
+  pkid UUID [pk]
+  tenant_pkid UUID [not null]
+  asset_sensor_pkid UUID [ref: > asset_sensors.pkid]
+  value decimal(15,6)
+  reading_time timestamp [default: `now()`]
+  indexes {
+    (asset_sensor_pkid, reading_time) [unique]
+  }
+}
+
+Table asset_alerts {
+  pkid UUID [pk]
+  tenant_pkid UUID [not null]
+  asset_pkid UUID [ref: > assets.pkid]
+  asset_sensor_pkid UUID [ref: > asset_sensors.pkid]
+  threshold_pkid UUID [ref: > sensor_thresholds.pkid]
+  alert_time timestamp [default: `now()`]
+  resolved_time timestamp
+  severity varchar(20)
+  indexes {
+    (tenant_pkid, asset_pkid, resolved_time)
+    (asset_sensor_pkid, alert_time)
+  }
+}
+
+Table asset_documents {
+  pkid UUID [pk]
+  tenant_pkid UUID [not null]
+  asset_pkid UUID [ref: > assets.pkid]
+  document_type varchar(50)
+  file_key varchar(255) [note: "S3/minio key"]
+  uploaded_at timestamp [default: `now()`]
+  indexes {
+    (tenant_pkid, asset_pkid)
+  }
+}
+

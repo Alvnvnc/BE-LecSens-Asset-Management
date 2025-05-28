@@ -1,0 +1,19 @@
+# Ignore the binary file
+main
+
+# Ignore the vendor directory
+vendor/
+
+# Ignore the Git repository files
+.git
+.gitignore
+
+# Ignore the Dockerfile and Docker Compose file
+# Dockerfile
+# docker-compose.yml
+
+# Ignore Go test files
+*_test.go
+
+# Ignore local Go modules cache
+# go.sum
