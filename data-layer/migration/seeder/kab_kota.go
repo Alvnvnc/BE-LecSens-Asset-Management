@@ -1,4 +1,4 @@
-package main
+package seeder
 
 import (
 	"be-lecsens/asset_management/data-layer/config"

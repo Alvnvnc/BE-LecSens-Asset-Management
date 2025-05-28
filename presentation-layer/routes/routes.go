@@ -14,6 +14,11 @@ func SetupRoutes(
 	assetTypeController *controller.AssetTypeController,
 	locationController *controller.LocationController,
 	assetDocumentController *controller.AssetDocumentController,
+	assetSensorController *controller.AssetSensorController,
+	sensorTypeController *controller.SensorTypeController,
+	sensorMeasurementFieldController *controller.SensorMeasurementFieldController,
+	sensorMeasurementTypeController *controller.SensorMeasurementTypeController,
+	iotSensorReadingController *controller.IoTSensorReadingController,
 	jwtConfig middleware.JWTConfig,
 ) {
 
@@ -37,4 +42,18 @@ func SetupRoutes(
 	// Setup Asset Document routes
 	SetupAssetDocumentRoutes(router, assetDocumentController)
 
+	// Setup Asset Sensor routes
+	SetupAssetSensorRoutes(router, assetSensorController)
+
+	// Setup Sensor Type routes
+	SetupSensorTypeRoutes(router, sensorTypeController)
+
+	// Setup Sensor Measurement Field routes
+	SetupSensorMeasurementFieldRoutes(router, sensorMeasurementFieldController)
+
+	// Setup Sensor Measurement Type routes
+	SetupSensorMeasurementTypeRoutes(router, sensorMeasurementTypeController)
+
+	// Setup IoT Sensor Reading routes
+	SetupIoTSensorReadingRoutes(router, iotSensorReadingController)
 }

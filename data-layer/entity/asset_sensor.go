@@ -10,7 +10,7 @@ import (
 // AssetSensor represents a sensor attached to an asset
 type AssetSensor struct {
 	ID                uuid.UUID       `json:"id"`
-	TenantID          uuid.UUID       `json:"tenant_id"`
+	TenantID          *uuid.UUID      `json:"tenant_id,omitempty"`
 	AssetID           uuid.UUID       `json:"asset_id"`
 	Name              string          `json:"name"`
 	SensorTypeID      uuid.UUID       `json:"sensor_type_id"`

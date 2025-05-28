@@ -67,6 +67,11 @@ func main() {
 	assetTypeRepo := repository.NewAssetTypeRepository(db)
 	locationRepo := repository.NewLocationRepository(db)
 	assetDocumentRepo := repository.NewAssetDocumentRepository(db)
+	assetSensorRepo := repository.NewAssetSensorRepository(db)
+	sensorTypeRepo := repository.NewSensorTypeRepository(db)
+	sensorMeasurementFieldRepo := repository.NewSensorMeasurementFieldRepository(db)
+	sensorMeasurementTypeRepo := repository.NewSensorMeasurementTypeRepository(db)
+	iotSensorReadingRepo := repository.NewIoTSensorReadingRepository(db)
 
 	// Initialize services
 	log.Println("Initializing services")
@@ -74,14 +79,24 @@ func main() {
 	assetTypeService := service.NewAssetTypeService(assetTypeRepo)
 	locationService := service.NewLocationService(locationRepo)
 	assetDocumentService := service.NewAssetDocumentService(assetDocumentRepo, assetRepo, cloudinaryService)
+	assetSensorService := service.NewAssetSensorService(assetSensorRepo, assetRepo)
+	sensorTypeService := service.NewSensorTypeService(sensorTypeRepo)
+	sensorMeasurementFieldService := service.NewSensorMeasurementFieldService(sensorMeasurementFieldRepo)
+	sensorMeasurementTypeService := service.NewSensorMeasurementTypeService(sensorMeasurementTypeRepo)
+	iotSensorReadingService := service.NewIoTSensorReadingService(iotSensorReadingRepo)
 
 	// Initialize controllers
 	assetController := controller.NewAssetController(assetService, cfg)
 	assetTypeController := controller.NewAssetTypeController(assetTypeService)
 	locationController := controller.NewLocationController(locationService)
 	assetDocumentController := controller.NewAssetDocumentController(assetDocumentService, cfg)
+	assetSensorController := controller.NewAssetSensorController(assetSensorService)
+	sensorTypeController := controller.NewSensorTypeController(sensorTypeService, cfg)
+	sensorMeasurementFieldController := controller.NewSensorMeasurementFieldController(sensorMeasurementFieldService)
+	sensorMeasurementTypeController := controller.NewSensorMeasurementTypeController(sensorMeasurementTypeService, cfg)
+	iotSensorReadingController := controller.NewIoTSensorReadingController(iotSensorReadingService, cfg)
 
-	// Create JWT config
+	// Initialize JWT config
 	jwtConfig := middleware.JWTConfig{
 		SecretKey: cfg.JWT.SecretKey,
 	}
@@ -93,7 +108,19 @@ func main() {
 	router.Use(middleware.LoggingMiddleware())
 
 	// Configure routes
-	routes.SetupRoutes(router, assetController, assetTypeController, locationController, assetDocumentController, jwtConfig)
+	routes.SetupRoutes(
+		router,
+		assetController,
+		assetTypeController,
+		locationController,
+		assetDocumentController,
+		assetSensorController,
+		sensorTypeController,
+		sensorMeasurementFieldController,
+		sensorMeasurementTypeController,
+		iotSensorReadingController,
+		jwtConfig,
+	)
 
 	// Start the server
 	log.Printf("Server running on port %s", cfg.Server.Port)

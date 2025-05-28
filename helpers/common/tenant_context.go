@@ -17,8 +17,23 @@ const (
 
 // GetTenantID retrieves the tenant ID from the context
 func GetTenantID(ctx context.Context) (uuid.UUID, bool) {
-	tenantID, ok := ctx.Value(TenantContextKey).(uuid.UUID)
-	return tenantID, ok
+	// First try to get from context.Context (stored as uuid.UUID)
+	if tenantID, ok := ctx.Value(TenantContextKey).(uuid.UUID); ok {
+		return tenantID, true
+	}
+
+	// If not found, try to get from Gin context (stored as string)
+	if ginCtx, ok := ctx.(*gin.Context); ok {
+		if tenantIDStr, exists := ginCtx.Get("tenant_id"); exists {
+			if tenantIDString, ok := tenantIDStr.(string); ok {
+				if tenantID, err := uuid.Parse(tenantIDString); err == nil {
+					return tenantID, true
+				}
+			}
+		}
+	}
+
+	return uuid.UUID{}, false
 }
 
 // WithTenant adds tenant ID to context

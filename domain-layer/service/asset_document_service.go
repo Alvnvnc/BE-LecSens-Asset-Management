@@ -218,6 +218,17 @@ func (s *AssetDocumentService) GetAssetDocumentsByType(ctx context.Context, asse
 
 // ListAssetDocuments retrieves asset documents with pagination
 func (s *AssetDocumentService) ListAssetDocuments(ctx context.Context, page, pageSize int) ([]*dto.AssetDocumentResponse, error) {
+	// Validate tenant ID from context (SuperAdmin can work without tenant ID)
+	tenantID, hasTenantID := common.GetTenantID(ctx)
+	isSuperAdmin := common.IsSuperAdmin(ctx)
+
+	log.Printf("ListAssetDocuments: tenantID=%v, hasTenantID=%v, isSuperAdmin=%v", tenantID, hasTenantID, isSuperAdmin)
+
+	// For regular users, tenant ID is required. For SuperAdmin, it's optional
+	if !hasTenantID && !isSuperAdmin {
+		return nil, common.NewValidationError("tenant ID is required", nil)
+	}
+
 	// Validate pagination parameters
 	if page < 1 {
 		page = 1
@@ -226,10 +237,15 @@ func (s *AssetDocumentService) ListAssetDocuments(ctx context.Context, page, pag
 		pageSize = 10 // Default page size
 	}
 
+	log.Printf("ListAssetDocuments: Calling repository List with page=%d, pageSize=%d", page, pageSize)
+
 	documents, err := s.assetDocumentRepo.List(ctx, page, pageSize)
 	if err != nil {
+		log.Printf("ListAssetDocuments: Repository error: %v", err)
 		return nil, fmt.Errorf("failed to list asset documents: %w", err)
 	}
+
+	log.Printf("ListAssetDocuments: Retrieved %d documents", len(documents))
 
 	return s.entitiesToResponse(documents), nil
 }
@@ -595,7 +611,7 @@ func (s *AssetDocumentService) ReplaceAssetDocument(ctx context.Context, req *dt
 	}
 
 	// 🔄 VERSIONED STORAGE MANAGEMENT: Upload new file with versioning
-	err = s.manageVersionedStorage(ctx, *req.AssetID, req.DocumentType, currentDoc.CloudinaryID)
+	err = s.manageVersionedStorage(*req.AssetID, req.DocumentType, currentDoc.CloudinaryID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to manage versioned storage: %w", err)
 	}
@@ -638,7 +654,7 @@ func (s *AssetDocumentService) ReplaceAssetDocument(ctx context.Context, req *dt
 // - Max 3 files per asset per document type in Cloudinary
 // - Only the latest file is recorded in database
 // - 2 older files serve as backups in Cloudinary
-func (s *AssetDocumentService) manageVersionedStorage(ctx context.Context, assetID uuid.UUID, docType, currentCloudinaryID string) error {
+func (s *AssetDocumentService) manageVersionedStorage(assetID uuid.UUID, docType, currentCloudinaryID string) error {
 	log.Printf("manageVersionedStorage: Starting for asset %s, type %s", assetID.String(), docType)
 
 	// In the versioned system:

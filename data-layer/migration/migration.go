@@ -86,5 +86,51 @@ func runMigrations(cfg *config.Config) error {
 		return fmt.Errorf("asset document migration failed: %v", err)
 	}
 
+	// Connect to database for sensor migrations
+	dsn := fmt.Sprintf("host=%s port=%s user=%s password=%s dbname=%s sslmode=disable",
+		cfg.DB.Host, cfg.DB.Port, cfg.DB.User, cfg.DB.Password, cfg.DB.Name)
+
+	db, err := sql.Open("postgres", dsn)
+	if err != nil {
+		return fmt.Errorf("failed to connect to database for sensor migrations: %v", err)
+	}
+	defer db.Close()
+
+	// Run sensor type migration
+	if err := CreateSensorTypeTables(db); err != nil {
+		return fmt.Errorf("sensor type migration failed: %v", err)
+	}
+
+	// Create sensor measurement type tables
+	log.Println("Creating sensor measurement type tables...")
+	err = CreateSensorMeasurementTypeTables(db)
+	if err != nil {
+		return fmt.Errorf("sensor measurement type migration failed: %v", err)
+	}
+	log.Println("Sensor measurement type tables created successfully")
+
+	// Run sensor measurement field migration
+	if err := CreateSensorMeasurementFieldTables(db); err != nil {
+		return fmt.Errorf("sensor measurement field migration failed: %v", err)
+	}
+
+	// Ensure table sensor_types exists before creating IoT sensor readings table
+	var exists bool
+	err = db.QueryRow("SELECT EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = 'sensor_types')").Scan(&exists)
+	if err != nil {
+		return fmt.Errorf("failed to check if sensor_types table exists: %v", err)
+	}
+
+	if !exists {
+		return fmt.Errorf("sensor_types table does not exist, required for IoT sensor readings table")
+	}
+
+	// Run IoT sensor reading migration
+	log.Println("Creating IoT sensor readings table...")
+	if err := CreateIoTSensorReadingTableDirect(db); err != nil {
+		return fmt.Errorf("iot sensor reading migration failed: %v", err)
+	}
+	log.Println("IoT sensor readings table created successfully")
+
 	return nil
 }
