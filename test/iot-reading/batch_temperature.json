@@ -1,0 +1,38 @@
+[
+  {
+    "sensor_id": "123e4567-e89b-12d3-a456-426614174000",
+    "sensor_type": "temperature",
+    "reading_value": 23.5,
+    "unit": "°C",
+    "location": "Server Room A",
+    "timestamp": "2025-05-29T10:00:00Z",
+    "metadata": {
+      "calibration_status": "calibrated",
+      "battery_level": 85
+    }
+  },
+  {
+    "sensor_id": "123e4567-e89b-12d3-a456-426614174000",
+    "sensor_type": "temperature",
+    "reading_value": 24.2,
+    "unit": "°C",
+    "location": "Server Room A",
+    "timestamp": "2025-05-29T10:15:00Z",
+    "metadata": {
+      "calibration_status": "calibrated",
+      "battery_level": 84
+    }
+  },
+  {
+    "sensor_id": "123e4567-e89b-12d3-a456-426614174000",
+    "sensor_type": "temperature",
+    "reading_value": 25.1,
+    "unit": "°C",
+    "location": "Server Room A",
+    "timestamp": "2025-05-29T10:30:00Z",
+    "metadata": {
+      "calibration_status": "calibrated",
+      "battery_level": 83
+    }
+  }
+]

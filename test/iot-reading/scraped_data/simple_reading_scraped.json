@@ -1,0 +1,9 @@
+{
+    "asset_sensor_id": "14408bbe-0d37-46cc-97aa-68f8d86eb451",
+    "sensor_type_id": "8cb24bfb-7fdb-4e67-9b61-f913e7977b88",
+    "mac_address": "AA:BB:CC:DD:EE:A2",
+    "measurement_data": {
+        "value": 25.5,
+        "unit": "test"
+    }
+}

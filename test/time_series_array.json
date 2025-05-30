@@ -1,0 +1,82 @@
+[
+  {
+    "asset_sensor_id": "time-series-logger-01",
+    "sensor_type_id": "data-logger",
+    "mac_address": "TS:10:20:30:40:50", 
+    "reading_time": "2025-05-30T08:00:00Z",
+    "voltage": {
+      "unit": "V",
+      "label": "Battery Voltage",
+      "value": 12.1
+    },
+    "signal_strength": {
+      "unit": "dBm",
+      "label": "Signal Strength",
+      "value": -65
+    }
+  },
+  {
+    "asset_sensor_id": "time-series-logger-01",
+    "sensor_type_id": "data-logger",
+    "mac_address": "TS:10:20:30:40:50",
+    "reading_time": "2025-05-30T08:01:00Z", 
+    "voltage": {
+      "unit": "V",
+      "label": "Battery Voltage",
+      "value": 12.3
+    },
+    "signal_strength": {
+      "unit": "dBm",
+      "label": "Signal Strength",
+      "value": -62
+    }
+  },
+  {
+    "asset_sensor_id": "time-series-logger-01",
+    "sensor_type_id": "data-logger",
+    "mac_address": "TS:10:20:30:40:50",
+    "reading_time": "2025-05-30T08:02:00Z",
+    "voltage": {
+      "unit": "V",
+      "label": "Battery Voltage",
+      "value": 12.0
+    },
+    "signal_strength": {
+      "unit": "dBm", 
+      "label": "Signal Strength",
+      "value": -68
+    }
+  },
+  {
+    "asset_sensor_id": "time-series-logger-01",
+    "sensor_type_id": "data-logger",
+    "mac_address": "TS:10:20:30:40:50",
+    "reading_time": "2025-05-30T08:03:00Z",
+    "voltage": {
+      "unit": "V",
+      "label": "Battery Voltage",
+      "value": 11.9
+    },
+    "signal_strength": {
+      "unit": "dBm",
+      "label": "Signal Strength",
+      "value": -70
+    }
+  },
+  {
+    "asset_sensor_id": "time-series-logger-01",
+    "sensor_type_id": "data-logger", 
+    "mac_address": "TS:10:20:30:40:50",
+    "reading_time": "2025-05-30T08:04:00Z",
+    "voltage": {
+      "unit": "V",
+      "label": "Battery Voltage",
+      "value": 12.2
+    },
+    "signal_strength": {
+      "unit": "dBm",
+      "label": "Signal Strength",
+      "value": -63
+    }
+  }
+]

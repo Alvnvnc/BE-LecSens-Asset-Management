@@ -1,0 +1,17 @@
+{
+  "asset_sensor_id": "550e8400-e29b-41d4-a716-446655440001",
+  "sensor_type_id": "550e8400-e29b-41d4-a716-446655440101",
+  "mac_address": "AA:BB:CC:DD:EE:FF",
+  "location": "Room 101 - Server Area",
+  "measurement_data": {
+    "temperature": 25.5,
+    "humidity": 65.2,
+    "timestamp": "2025-05-29T10:30:00Z"
+  },
+  "standard_fields": {
+    "battery_level": 85,
+    "signal_strength": -45,
+    "firmware_version": "v1.2.3"
+  },
+  "reading_time": "2025-05-29T10:30:00Z"
+}

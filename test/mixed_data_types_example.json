@@ -1,0 +1,80 @@
+{
+  "asset_sensor_id": "smart-building-floor-3",
+  "sensor_type_id": "building-automation",
+  "mac_address": "SB:03:F4:A2:B1:C9",
+  "room_temperature": {
+    "unit": "°C",
+    "label": "Room Temperature",
+    "value": 22.5
+  },
+  "target_temperature": {
+    "unit": "°C",
+    "label": "Target Temperature", 
+    "value": 23.0
+  },
+  "co2_level": {
+    "unit": "ppm",
+    "label": "CO2 Level",
+    "value": 480
+  },
+  "light_intensity": {
+    "unit": "lux",
+    "label": "Light Intensity",
+    "value": 350
+  },
+  "occupancy": {
+    "unit": "persons",
+    "label": "Room Occupancy",
+    "value": 8
+  },
+  "max_occupancy": {
+    "unit": "persons",
+    "label": "Maximum Occupancy",
+    "value": 12
+  },
+  "energy_usage": {
+    "unit": "kWh",
+    "label": "Energy Usage",
+    "value": 2.3
+  },
+  "ac_status": {
+    "unit": "",
+    "label": "AC Status",
+    "value": "ON"
+  },
+  "lighting_status": {
+    "unit": "",
+    "label": "Lighting Status", 
+    "value": "AUTO"
+  },
+  "window_status": {
+    "unit": "",
+    "label": "Window Status",
+    "value": "CLOSED"
+  },
+  "motion_detected": {
+    "unit": "",
+    "label": "Motion Detected",
+    "value": true
+  },
+  "emergency_mode": {
+    "unit": "",
+    "label": "Emergency Mode",
+    "value": false
+  },
+  "hvac_mode": {
+    "unit": "",
+    "label": "HVAC Mode",
+    "value": "COOLING"
+  },
+  "air_quality_status": {
+    "unit": "",
+    "label": "Air Quality Status",
+    "value": "GOOD"
+  },
+  "maintenance_required": {
+    "unit": "",
+    "label": "Maintenance Required",
+    "value": false
+  }
+}

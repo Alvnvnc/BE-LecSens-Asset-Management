@@ -3,7 +3,6 @@ package main
 import (
 	"be-lecsens/asset_management/data-layer/config"
 	"be-lecsens/asset_management/data-layer/migration"
-	"context"
 	"database/sql"
 	"flag"
 	"fmt"
@@ -31,12 +30,10 @@ func main() {
 
 	// Parse command line flags
 	var (
-		action    = flag.String("action", "", "Action to perform: drop-table, truncate-table, drop-all, migrate, seed, cleanup-duplicates")
+		action    = flag.String("action", "", "Action to perform: drop-table, truncate-table, drop-all, migrate, seed")
 		tableName = flag.String("table", "", "Table name (for drop-table, truncate-table)")
 		csvPath   = flag.String("csv", "", "Path to CSV file (for seed)")
 		force     = flag.Bool("force", false, "Force action without confirmation")
-		assetID   = flag.String("asset-id", "", "Asset ID (for cleanup-duplicates)")
-		dryRun    = flag.Bool("dry-run", false, "Show what would be deleted without actually deleting (for cleanup-duplicates)")
 	)
 	flag.Parse()
 
@@ -80,8 +77,6 @@ func main() {
 		runMigrations(cfg)
 	case "seed":
 		runSeeder(db, *csvPath)
-	case "cleanup-duplicates":
-		runCleanupDuplicates(*assetID, *dryRun)
 	default:
 		log.Fatalf("Unknown action: %s", *action)
 	}
@@ -98,14 +93,11 @@ func printUsage() {
 	fmt.Println("  drop-all       Drop all tables")
 	fmt.Println("  migrate        Run all migrations")
 	fmt.Println("  seed           Run location seeder")
-	fmt.Println("  cleanup-duplicates  Clean up duplicate asset documents")
 	fmt.Println("")
 	fmt.Println("Options:")
 	fmt.Println("  -table=<name>  Table name (required for drop-table, truncate-table)")
 	fmt.Println("  -csv=<path>    CSV file path (for seed action)")
 	fmt.Println("  -force         Skip confirmation prompts")
-	fmt.Println("  -asset-id=<id> Asset ID (for cleanup-duplicates, optional)")
-	fmt.Println("  -dry-run       Show what would be deleted without actually deleting")
 	fmt.Println("")
 	fmt.Println("Examples:")
 	fmt.Println("  go run helpers/cmd/cmd.go -action=drop-table -table=assets")
@@ -113,9 +105,6 @@ func printUsage() {
 	fmt.Println("  go run helpers/cmd/cmd.go -action=drop-all -force")
 	fmt.Println("  go run helpers/cmd/cmd.go -action=migrate")
 	fmt.Println("  go run helpers/cmd/cmd.go -action=seed -csv=data-layer/migration/seeder/kota_kab.csv")
-	fmt.Println("  go run helpers/cmd/cmd.go -action=cleanup-duplicates -dry-run")
-	fmt.Println("  go run helpers/cmd/cmd.go -action=cleanup-duplicates")
-	fmt.Println("  go run helpers/cmd/cmd.go -action=cleanup-duplicates -asset-id=123e4567-e89b-12d3-a456-426614174000")
 }
 
 func dropTable(db *sql.DB, tableName string, force bool) {
@@ -245,30 +234,4 @@ func runSeeder(db *sql.DB, csvPath string) {
 	}
 
 	log.Println("Location seeder completed successfully")
-}
-
-// runCleanupDuplicates runs the cleanup duplicates functionality
-func runCleanupDuplicates(assetID string, dryRun bool) {
-	// Create cleanup command without passing db (it creates its own connection)
-	cleanupCmd, err := NewCleanupDuplicatesCommand()
-	if err != nil {
-		log.Fatalf("Failed to create cleanup command: %v", err)
-	}
-	defer cleanupCmd.Close()
-
-	ctx := context.Background()
-
-	if assetID != "" {
-		// Cleanup specific asset
-		log.Printf("Starting cleanup for asset: %s", assetID)
-		err = cleanupCmd.CleanupAssetDuplicates(ctx, assetID, dryRun)
-	} else {
-		// Cleanup all assets
-		log.Println("Starting cleanup for all assets")
-		err = cleanupCmd.CleanupAllDuplicates(ctx, dryRun)
-	}
-
-	if err != nil {
-		log.Fatalf("Cleanup failed: %v", err)
-	}
 }

@@ -167,8 +167,8 @@ func (r *assetRepository) List(ctx context.Context, tenantID *uuid.UUID, page, p
 func (r *assetRepository) Update(ctx context.Context, asset *entity.Asset) error {
 	query := `
 		UPDATE assets
-		SET name = $1, asset_type_id = $2, location_id = $3, status = $4, properties = $5, updated_at = $6
-		WHERE id = $7`
+		SET name = $1, asset_type_id = $2, location_id = $3, status = $4, properties = $5, tenant_id = $6, updated_at = $7
+		WHERE id = $8`
 
 	now := time.Now()
 	result, err := r.db.ExecContext(
@@ -179,9 +179,11 @@ func (r *assetRepository) Update(ctx context.Context, asset *entity.Asset) error
 		asset.LocationID,
 		asset.Status,
 		asset.Properties,
+		asset.TenantID,
 		now,
 		asset.ID,
 	)
+
 	if err != nil {
 		return fmt.Errorf("failed to update asset: %w", err)
 	}
@@ -210,6 +212,7 @@ func (r *assetRepository) Delete(ctx context.Context, id uuid.UUID) error {
 	if err != nil {
 		return fmt.Errorf("failed to get rows affected: %w", err)
 	}
+
 	if rows == 0 {
 		return fmt.Errorf("asset not found")
 	}

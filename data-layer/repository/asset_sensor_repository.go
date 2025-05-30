@@ -9,9 +9,11 @@ import (
 	"errors"
 	"fmt"
 	"log"
+	"strings"
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/lib/pq"
 )
 
 // AssetSensorWithDetails represents an asset sensor with all its related information
@@ -23,17 +25,16 @@ type AssetSensorWithDetails struct {
 		Description  string    `json:"description"`
 		Manufacturer string    `json:"manufacturer"`
 		Model        string    `json:"model"`
-		Version      int       `json:"version"`
+		Version      string    `json:"version"`
 		IsActive     bool      `json:"is_active"`
 	} `json:"sensor_type"`
 	MeasurementTypes []struct {
 		ID               uuid.UUID       `json:"id"`
 		Name             string          `json:"name"`
 		Description      string          `json:"description"`
-		UnitOfMeasure    string          `json:"unit_of_measure"`
 		PropertiesSchema json.RawMessage `json:"properties_schema"`
 		UIConfiguration  json.RawMessage `json:"ui_configuration"`
-		Version          int             `json:"version"`
+		Version          string          `json:"version"`
 		IsActive         bool            `json:"is_active"`
 		Fields           []struct {
 			ID          uuid.UUID `json:"id"`
@@ -137,6 +138,8 @@ func (r *assetSensorRepository) Create(ctx context.Context, sensor *entity.Asset
 
 // GetByID retrieves an asset sensor by its ID with all related information
 func (r *assetSensorRepository) GetByID(ctx context.Context, id uuid.UUID) (*AssetSensorWithDetails, error) {
+	log.Printf("DEBUG: GetByID called with sensor ID: %s", id)
+
 	query := `
 		WITH sensor_details AS (
 			SELECT 
@@ -155,7 +158,6 @@ func (r *assetSensorRepository) GetByID(ctx context.Context, id uuid.UUID) (*Ass
 					'id', smt.id,
 					'name', smt.name,
 					'description', smt.description,
-					'unit_of_measure', smt.unit_of_measure,
 					'properties_schema', smt.properties_schema,
 					'ui_configuration', smt.ui_configuration,
 					'version', smt.version,
@@ -214,27 +216,88 @@ func (r *assetSensorRepository) GetByID(ctx context.Context, id uuid.UUID) (*Ass
 	)
 
 	if err != nil {
+		log.Printf("DEBUG: Error scanning query result: %v", err)
 		if err == sql.ErrNoRows {
+			log.Printf("DEBUG: No rows found for sensor ID: %s", id)
 			return nil, nil
 		}
 		return nil, fmt.Errorf("failed to get asset sensor: %w", err)
+	}
+
+	log.Printf("DEBUG: Successfully scanned sensor data: ID=%s, Name=%s, SensorType.Version=%s", sensor.ID, sensor.Name, result.SensorType.Version)
+	log.Printf("DEBUG: Measurement types JSON length: %d", len(measurementTypesJSON))
+	if len(measurementTypesJSON) > 0 && len(measurementTypesJSON) < 500 {
+		log.Printf("DEBUG: Measurement types JSON: %s", string(measurementTypesJSON))
 	}
 
 	result.AssetSensor = &sensor
 
 	// Parse measurement types JSON
 	if measurementTypesJSON != nil {
+		log.Printf("DEBUG: Attempting to unmarshal measurement types JSON")
 		if err := json.Unmarshal(measurementTypesJSON, &result.MeasurementTypes); err != nil {
+			log.Printf("DEBUG: Error unmarshaling measurement types JSON: %v", err)
+			log.Printf("DEBUG: Problematic JSON: %s", string(measurementTypesJSON))
 			return nil, fmt.Errorf("failed to parse measurement types: %w", err)
 		}
+		log.Printf("DEBUG: Successfully parsed %d measurement types", len(result.MeasurementTypes))
+	} else {
+		log.Printf("DEBUG: No measurement types JSON to parse")
 	}
 
+	log.Printf("DEBUG: Returning complete sensor info successfully")
 	return &result, nil
 }
 
 // GetByAssetID retrieves all sensors for a specific asset
 func (r *assetSensorRepository) GetByAssetID(ctx context.Context, assetID uuid.UUID) ([]*AssetSensorWithDetails, error) {
-	query := `
+	// First, get all sensor type IDs for this asset
+	var sensorTypeIDs []uuid.UUID
+	err := r.DB.QueryRowContext(ctx, `
+		SELECT array_agg(DISTINCT sensor_type_id)
+		FROM asset_sensors
+		WHERE asset_id = $1`, assetID).Scan(&sensorTypeIDs)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get sensor type IDs: %w", err)
+	}
+
+	// Get measurement fields for all sensor types
+	fieldsQuery := `
+		SELECT 
+			smf.id,
+			smf.name,
+			smf.label,
+			smf.description,
+			smf.data_type,
+			smf.required,
+			smf.unit,
+			smf.min,
+			smf.max
+		FROM sensor_measurement_fields smf
+		JOIN sensor_measurement_types smt ON smf.sensor_measurement_type_id = smt.id
+		WHERE smt.sensor_type_id = ANY($1)
+		ORDER BY smf.name`
+
+	fields, err := r.DB.QueryContext(ctx, fieldsQuery, pq.Array(sensorTypeIDs))
+	if err != nil {
+		return nil, fmt.Errorf("failed to get measurement fields: %w", err)
+	}
+	defer fields.Close()
+
+	// Build dynamic column names
+	var columnNames []string
+	for fields.Next() {
+		var field struct {
+			Name string
+		}
+		if err := fields.Scan(&field.Name); err != nil {
+			return nil, fmt.Errorf("failed to scan field name: %w", err)
+		}
+		columnNames = append(columnNames, fmt.Sprintf("COALESCE(isr.%s, NULL) as %s", field.Name, field.Name))
+	}
+
+	// Main query
+	query := fmt.Sprintf(`
 		WITH sensor_details AS (
 			SELECT 
 				asn.*,
@@ -252,7 +315,6 @@ func (r *assetSensorRepository) GetByAssetID(ctx context.Context, assetID uuid.U
 					'id', smt.id,
 					'name', smt.name,
 					'description', smt.description,
-					'unit_of_measure', smt.unit_of_measure,
 					'properties_schema', smt.properties_schema,
 					'ui_configuration', smt.ui_configuration,
 					'version', smt.version,
@@ -268,10 +330,12 @@ func (r *assetSensorRepository) GetByAssetID(ctx context.Context, assetID uuid.U
 								'required', smf.required,
 								'unit', smf.unit,
 								'min', smf.min,
-								'max', smf.max
+								'max', smf.max,
+								'value', %s
 							)
 						)
 						FROM sensor_measurement_fields smf
+						LEFT JOIN iot_sensor_readings isr ON isr.asset_sensor_id = sd.id
 						WHERE smf.sensor_measurement_type_id = smt.id
 					)
 				)
@@ -282,7 +346,8 @@ func (r *assetSensorRepository) GetByAssetID(ctx context.Context, assetID uuid.U
 				sd.configuration, sd.last_reading_value, sd.last_reading_time, sd.last_reading_values,
 				sd.created_at, sd.updated_at, sd.st_id, sd.st_name, sd.st_description,
 				sd.st_manufacturer, sd.st_model, sd.st_version, sd.st_is_active
-		ORDER BY sd.created_at DESC`
+		ORDER BY sd.created_at DESC`,
+		strings.Join(columnNames, ", "))
 
 	rows, err := r.DB.QueryContext(ctx, query, assetID)
 	if err != nil {
@@ -371,7 +436,7 @@ func (r *assetSensorRepository) GetBySensorTypeID(ctx context.Context, sensorTyp
 						'id', smt.id,
 						'name', smt.name,
 						'description', smt.description,
-						'unit_of_measure', smt.unit_of_measure,
+						
 						'properties_schema', smt.properties_schema,
 						'ui_configuration', smt.ui_configuration,
 						'version', smt.version,
@@ -423,7 +488,7 @@ func (r *assetSensorRepository) GetBySensorTypeID(ctx context.Context, sensorTyp
 						'id', smt.id,
 						'name', smt.name,
 						'description', smt.description,
-						'unit_of_measure', smt.unit_of_measure,
+						
 						'properties_schema', smt.properties_schema,
 						'ui_configuration', smt.ui_configuration,
 						'version', smt.version,
@@ -546,7 +611,7 @@ func (r *assetSensorRepository) List(ctx context.Context, page, pageSize int) ([
 						'id', mt.id,
 						'name', mt.name,
 						'description', mt.description,
-						'unit_of_measure', mt.unit_of_measure,
+						
 						'properties_schema', mt.properties_schema,
 						'ui_configuration', mt.ui_configuration,
 						'version', mt.version,
@@ -796,7 +861,7 @@ func (r *assetSensorRepository) GetActiveSensors(ctx context.Context) ([]*AssetS
 					'id', smt.id,
 					'name', smt.name,
 					'description', smt.description,
-					'unit_of_measure', smt.unit_of_measure,
+					
 					'properties_schema', smt.properties_schema,
 					'ui_configuration', smt.ui_configuration,
 					'version', smt.version,
@@ -902,7 +967,7 @@ func (r *assetSensorRepository) GetSensorsByStatus(ctx context.Context, status s
 					'id', smt.id,
 					'name', smt.name,
 					'description', smt.description,
-					'unit_of_measure', smt.unit_of_measure,
+					
 					'properties_schema', smt.properties_schema,
 					'ui_configuration', smt.ui_configuration,
 					'version', smt.version,

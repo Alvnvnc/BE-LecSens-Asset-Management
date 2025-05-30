@@ -83,7 +83,7 @@ func main() {
 	sensorTypeService := service.NewSensorTypeService(sensorTypeRepo)
 	sensorMeasurementFieldService := service.NewSensorMeasurementFieldService(sensorMeasurementFieldRepo)
 	sensorMeasurementTypeService := service.NewSensorMeasurementTypeService(sensorMeasurementTypeRepo)
-	iotSensorReadingService := service.NewIoTSensorReadingService(iotSensorReadingRepo)
+	iotSensorReadingService := service.NewIoTSensorReadingService(iotSensorReadingRepo, assetSensorRepo, sensorTypeRepo, assetRepo, locationRepo)
 
 	// Initialize controllers
 	assetController := controller.NewAssetController(assetService, cfg)
@@ -94,7 +94,7 @@ func main() {
 	sensorTypeController := controller.NewSensorTypeController(sensorTypeService, cfg)
 	sensorMeasurementFieldController := controller.NewSensorMeasurementFieldController(sensorMeasurementFieldService)
 	sensorMeasurementTypeController := controller.NewSensorMeasurementTypeController(sensorMeasurementTypeService, cfg)
-	iotSensorReadingController := controller.NewIoTSensorReadingController(iotSensorReadingService, cfg)
+	iotSensorReadingController := controller.NewIoTSensorReadingController(iotSensorReadingService)
 
 	// Initialize JWT config
 	jwtConfig := middleware.JWTConfig{

@@ -1,0 +1,16 @@
+{
+  "sensor_id": "123e4567-e89b-12d3-a456-426614174000",
+  "sensor_type": "temperature",
+  "reading_value": 23.456789123456789,
+  "unit": "°C",
+  "location": "Precision Lab",
+  "timestamp": "2025-05-29T12:30:45.123456789Z",
+  "metadata": {
+    "calibration_status": "high_precision",
+    "battery_level": 89,
+    "precision_level": "micro",
+    "device_serial": "TEMP-HP-2025-001",
+    "calibration_date": "2025-05-01T00:00:00Z",
+    "measurement_accuracy": "±0.001°C"
+  }
+}

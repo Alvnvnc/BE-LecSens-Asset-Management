@@ -1,0 +1,79 @@
+{
+  "readings": [
+    {
+      "asset_sensor_id": "sensor-location-1",
+      "sensor_type_id": "air-quality-monitor",
+      "mac_address": "AQ:01:02:03:04:05",
+      "pm25": {
+        "unit": "μg/m³",
+        "label": "PM2.5",
+        "value": 15.2
+      },
+      "pm10": {
+        "unit": "μg/m³", 
+        "label": "PM10",
+        "value": 25.8
+      },
+      "temperature": {
+        "unit": "°C",
+        "label": "Temperature",
+        "value": 26.1
+      },
+      "humidity": {
+        "unit": "%",
+        "label": "Humidity", 
+        "value": 68.5
+      }
+    },
+    {
+      "asset_sensor_id": "sensor-location-2",
+      "sensor_type_id": "air-quality-monitor",
+      "mac_address": "AQ:01:02:03:04:06",
+      "pm25": {
+        "unit": "μg/m³",
+        "label": "PM2.5", 
+        "value": 18.7
+      },
+      "pm10": {
+        "unit": "μg/m³",
+        "label": "PM10",
+        "value": 28.3
+      },
+      "temperature": {
+        "unit": "°C",
+        "label": "Temperature",
+        "value": 25.9
+      },
+      "humidity": {
+        "unit": "%",
+        "label": "Humidity",
+        "value": 72.1
+      }
+    },
+    {
+      "asset_sensor_id": "sensor-location-3", 
+      "sensor_type_id": "air-quality-monitor",
+      "mac_address": "AQ:01:02:03:04:07",
+      "pm25": {
+        "unit": "μg/m³",
+        "label": "PM2.5",
+        "value": 12.1
+      },
+      "pm10": {
+        "unit": "μg/m³",
+        "label": "PM10",
+        "value": 22.4
+      },
+      "temperature": {
+        "unit": "°C",
+        "label": "Temperature",
+        "value": 24.8
+      },
+      "humidity": {
+        "unit": "%",
+        "label": "Humidity",
+        "value": 75.3
+      }
+    }
+  ]
+}

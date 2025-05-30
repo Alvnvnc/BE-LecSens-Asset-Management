@@ -5,6 +5,7 @@ import (
 	"be-lecsens/asset_management/helpers/dto"
 	"context"
 	"errors"
+	"fmt"
 
 	"github.com/google/uuid"
 )
@@ -76,6 +77,21 @@ func (s *SensorMeasurementFieldService) Create(ctx context.Context, req *dto.Cre
 	}
 	if req.DataType == "" {
 		return nil, errors.New("data type is required")
+	}
+
+	// Validate data type
+	switch req.DataType {
+	case "number", "string", "boolean", "array", "object":
+		// Valid data types
+	default:
+		return nil, fmt.Errorf("unsupported data type: %s", req.DataType)
+	}
+
+	// Validate numeric constraints
+	if req.DataType == "number" {
+		if req.Min != nil && req.Max != nil && *req.Min > *req.Max {
+			return nil, errors.New("min value cannot be greater than max value")
+		}
 	}
 
 	// Create field in repository
@@ -228,6 +244,21 @@ func (s *SensorMeasurementFieldService) Update(ctx context.Context, id uuid.UUID
 	// Check if field was found
 	if field == nil {
 		return nil, errors.New("sensor measurement field not found")
+	}
+
+	// Validate data type if provided
+	if req.DataType != nil {
+		switch *req.DataType {
+		case "number", "string", "boolean", "array", "object":
+			// Valid data types
+		default:
+			return nil, fmt.Errorf("unsupported data type: %s", *req.DataType)
+		}
+	}
+
+	// Validate numeric constraints if both min and max are provided
+	if req.Min != nil && req.Max != nil && *req.Min > *req.Max {
+		return nil, errors.New("min value cannot be greater than max value")
 	}
 
 	// Update fields if provided

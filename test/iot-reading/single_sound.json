@@ -1,0 +1,13 @@
+{
+  "sensor_id": "def456gh-e89b-12d3-a456-426614174004",
+  "sensor_type": "sound",
+  "reading_value": 45.2,
+  "unit": "dB",
+  "location": "Meeting Room 2",
+  "timestamp": "2025-05-29T11:05:00Z",
+  "metadata": {
+    "calibration_status": "calibrated",
+    "battery_level": 88,
+    "frequency_range": "20Hz-20kHz"
+  }
+}

@@ -1,0 +1,101 @@
+{
+    "data": {
+        "asset_id": "2d620c4f-c828-4919-bda1-d6268d1cce46",
+        "configuration": {},
+        "created_at": "2025-05-30T04:03:22.134723Z",
+        "id": "329cd28c-31fb-4b72-b3a4-97e1ea446026",
+        "last_reading_time": null,
+        "last_reading_value": null,
+        "last_reading_values": {},
+        "measurement_types": [
+            {
+                "id": "85ada3a9-121e-4c87-b073-487907d40ab4",
+                "name": "PM2.5 Measurement",
+                "description": "Measurement for PM2.5 particulate matter",
+                "unit_of_measure": "",
+                "properties_schema": {
+                    "type": "object",
+                    "properties": {
+                        "sampling_time": {
+                            "type": "integer",
+                            "description": "Sampling time in seconds"
+                        },
+                        "calibration_factor": {
+                            "type": "number",
+                            "description": "Calibration factor for PM2.5 measurement"
+                        }
+                    }
+                },
+                "ui_configuration": {
+                    "display": {
+                        "chart_type": "line",
+                        "update_interval": 60,
+                        "warning_threshold": 35,
+                        "critical_threshold": 75
+                    }
+                },
+                "version": 1,
+                "is_active": true,
+                "fields": [
+                    {
+                        "id": "52243ed2-2646-4034-aada-c1d379c917ae",
+                        "name": "raw_value",
+                        "label": "Raw Value",
+                        "description": "Raw sensor reading value",
+                        "data_type": "float",
+                        "required": true,
+                        "unit": "μg/m³",
+                        "min": 0,
+                        "max": 1000
+                    },
+                    {
+                        "id": "839186dc-de21-491e-818b-9878c92e5067",
+                        "name": "temperature",
+                        "label": "Temperature",
+                        "description": "Sensor temperature during measurement",
+                        "data_type": "float",
+                        "required": false,
+                        "unit": "°C",
+                        "min": -10,
+                        "max": 50
+                    }
+                ]
+            }
+        ],
+        "name": "Sensor Polusi",
+        "sensor_type": {
+            "id": "b079d8cf-7964-4704-9553-9606bc38cd88",
+            "name": "Sensor Polusi",
+            "description": "Sensor Polusi",
+            "manufacturer": "Sumitomo",
+            "model": "SMT TH400",
+            "version": 2,
+            "is_active": true
+        },
+        "sensor_type_id": "b079d8cf-7964-4704-9553-9606bc38cd88",
+        "status": "active",
+        "tenant_id": null,
+        "updated_at": "2025-05-30T04:03:22.134723Z"
+    },
+    "message": "Asset sensor retrieved successfully"
+}
+
+itu adalah contoh measurment dari asset sensor saya. karena kita membuat sensornya secara dinamis sehingga otomatis apa yang dibaca oleh sensor reading hanyalah menerima data dan disimpan ke measurment data seperti ini :
+id,tenant_id,asset_sensor_id,sensor_type_id,mac_address,location,measurement_data,standard_fields,reading_time,created_at,updated_at,data_x,data_y,peak_x,peak_y,ppm,label,raw_data
+eb60c2c6-3451-4884-930d-1c03176b4345,e3b8f35c-a6d0-4bd3-bd78-84276b67b32e,14408bbe-0d37-46cc-97aa-68f8d86eb451,8cb24bfb-7fdb-4e67-9b61-f913e7977b88,AA:BB:CC:DD:EE:A2,KOTA JAYAPURA,"{""unit"": ""Celsius"", ""temperature"": 30.08}",{},2025-05-30 01:42:42.051+07,2025-05-30 02:01:39.232368+07,2025-05-30 02:01:39.232368+07,{},{},{},{},0.000000,,{}
+
+tetapi masalahnya adalah saya ingin agar data yang diinputkan harus dapat dinamis dan mengikuti sesuai sensor yang diisi. misalkan jika kau mengambil dari sensor type, kau akan menemukan percabangan yang menjukan tetang sensor type dan fieldnya bisa diisi dengan apa saja. saya ingin agar iot reading ini bisa membaca dan menyesuaikan secara otomatis untuk menerima data yang ada dan cocok pada sensor saja, sehingga misalkan diinputkan adalah 
+                        "label": "Temperature",
+                        "description": "Sensor temperature during measurement",
+                        "data_type": "float",
+                        "required": false,
+                        "unit": "°C",
+                        "min": -10,
+                        "max": 50
+                    }
+
+                    maka harus sesuai dengan kolom tersebut karena kita mengisi di iot reading bahwa kita memanggil dari sensor type tersebut yang berisi dengan tipe data float dengan min max nya adalah angka sekian. sehingga mungkin data diluar itu tidak akan masuk. saya ingin iot reading yang dapat dinamis dan fleksibel sehingga hasil didatabasenya tidak seperti ini :
+id,tenant_id,asset_sensor_id,sensor_type_id,mac_address,location,measurement_data,standard_fields,reading_time,created_at,updated_at,data_x,data_y,peak_x,peak_y,ppm,label,raw_data
+eb60c2c6-3451-4884-930d-1c03176b4345,e3b8f35c-a6d0-4bd3-bd78-84276b67b32e,14408bbe-0d37-46cc-97aa-68f8d86eb451,8cb24bfb-7fdb-4e67-9b61-f913e7977b88,AA:BB:CC:DD:EE:A2,KOTA JAYAPURA,"{""unit"": ""Celsius"", ""temperature"": 30.08}",{},2025-05-30 01:42:42.051+07,2025-05-30 02:01:39.232368+07,2025-05-30 02:01:39.232368+07,{},{},{},{},0.000000,,{}
+
+tetapi semuanya tertata masing masing. bisakah kau bantu saya dengan itu untuk sebuah tabel yang dinamis

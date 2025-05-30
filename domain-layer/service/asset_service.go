@@ -256,6 +256,30 @@ func (s *AssetService) UpdateAssetPartial(ctx context.Context, id uuid.UUID, upd
 		updatedAsset.Properties = json.RawMessage(propertiesBytes)
 	}
 
+	// Handle tenant_id updates - this is for fixing assets without tenant assignment
+	if tenantID, exists := updateRequest["tenant_id"]; exists && tenantID != nil {
+		var parsedTenantID uuid.UUID
+
+		// Handle different possible types for UUID
+		switch v := tenantID.(type) {
+		case string:
+			parsedTenantID, err = uuid.Parse(v)
+			if err != nil {
+				return nil, errors.New("invalid tenant ID format")
+			}
+		case uuid.UUID:
+			parsedTenantID = v
+		default:
+			return nil, errors.New("invalid tenant ID format")
+		}
+
+		updatedAsset.TenantID = &parsedTenantID
+	} else {
+		// IMPORTANT: Preserve existing tenant ID to ensure it doesn't get lost during update
+		// This is crucial for multi-tenant data integrity
+		updatedAsset.TenantID = existingAsset.TenantID
+	}
+
 	// Update timestamp
 	updatedAsset.UpdatedAt = time.Now()
 

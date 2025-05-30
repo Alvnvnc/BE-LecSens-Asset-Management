@@ -14,7 +14,7 @@ type SensorType struct {
 	Description  string
 	Manufacturer string
 	Model        string
-	Version      int
+	Version      string
 	IsActive     bool
 	CreatedAt    time.Time
 	UpdatedAt    *time.Time

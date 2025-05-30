@@ -12,12 +12,9 @@ type SensorMeasurementTypeDTO struct {
 	SensorTypeID     uuid.UUID   `json:"sensor_type_id"`
 	Name             string      `json:"name"`
 	Description      *string     `json:"description,omitempty"`
-	UnitOfMeasure    *string     `json:"unit_of_measure,omitempty"`
-	MinAcceptedValue *float64    `json:"min_accepted_value,omitempty"`
-	MaxAcceptedValue *float64    `json:"max_accepted_value,omitempty"`
 	PropertiesSchema interface{} `json:"properties_schema,omitempty"`
 	UIConfiguration  interface{} `json:"ui_configuration,omitempty"`
-	Version          int         `json:"version"`
+	Version          string      `json:"version"`
 	IsActive         bool        `json:"is_active"`
 	CreatedAt        time.Time   `json:"created_at"`
 	UpdatedAt        *time.Time  `json:"updated_at,omitempty"`
@@ -28,12 +25,9 @@ type CreateSensorMeasurementTypeRequest struct {
 	SensorTypeID     uuid.UUID   `json:"sensor_type_id" binding:"required"`
 	Name             string      `json:"name" binding:"required"`
 	Description      *string     `json:"description,omitempty"`
-	UnitOfMeasure    *string     `json:"unit_of_measure,omitempty"`
-	MinAcceptedValue *float64    `json:"min_accepted_value,omitempty"`
-	MaxAcceptedValue *float64    `json:"max_accepted_value,omitempty"`
 	PropertiesSchema interface{} `json:"properties_schema,omitempty"`
 	UIConfiguration  interface{} `json:"ui_configuration,omitempty"`
-	Version          int         `json:"version" binding:"required,min=1"`
+	Version          string      `json:"version" binding:"required"`
 	IsActive         bool        `json:"is_active"`
 }
 
@@ -41,12 +35,9 @@ type CreateSensorMeasurementTypeRequest struct {
 type UpdateSensorMeasurementTypeRequest struct {
 	Name             *string     `json:"name,omitempty"`
 	Description      *string     `json:"description,omitempty"`
-	UnitOfMeasure    *string     `json:"unit_of_measure,omitempty"`
-	MinAcceptedValue *float64    `json:"min_accepted_value,omitempty"`
-	MaxAcceptedValue *float64    `json:"max_accepted_value,omitempty"`
 	PropertiesSchema interface{} `json:"properties_schema,omitempty"`
 	UIConfiguration  interface{} `json:"ui_configuration,omitempty"`
-	Version          *int        `json:"version,omitempty" binding:"omitempty,min=1"`
+	Version          *string     `json:"version,omitempty"`
 	IsActive         *bool       `json:"is_active,omitempty"`
 }
 

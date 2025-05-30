@@ -1,0 +1,17 @@
+# Database Configuration for Testing Scripts
+# Copy this file to db_config.sh and update with your database settings
+
+# Database connection settings
+export DB_HOST="localhost"
+export DB_PORT="5432"
+export DB_NAME="lecsens_db"
+export DB_USER="postgres"
+export DB_PASSWORD="postgres"
+
+# API Testing settings
+export SERVER_URL="http://localhost:3160"
+export JWT_TOKEN="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjoiZGIzNWIxYmMtN2I3OC00NzkwLWI3ZTEtNmY1NWNjMzc5YjBhIiwicm9sZV9pZCI6ImM2OTkzMGM1LTU1YzAtNDRkYi05Y2M1LTkwNDhkMmMxODFjNCIsInJvbGVfbmFtZSI6IlNVUEVSQURNSU4iLCJleHAiOjE3NDg2MjQwMDgsIm5iZiI6MTc0ODUzNzYwOCwiaWF0IjoxNzQ4NTM3NjA4fQ.Az4PUb7ipuHrFPhoYPC6WQ4vH0XSZwXIY97P2qRx5JY"
+
+# Test settings
+export TEST_BATCH_SIZE="3"
+export TEST_SENSOR_LIMIT="10"

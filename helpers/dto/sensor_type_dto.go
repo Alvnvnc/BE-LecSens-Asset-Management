@@ -14,7 +14,7 @@ type SensorTypeDTO struct {
 	Description  string     `json:"description"`
 	Manufacturer string     `json:"manufacturer"`
 	Model        string     `json:"model"`
-	Version      int        `json:"version"`
+	Version      string     `json:"version"`
 	IsActive     bool       `json:"is_active"`
 	CreatedAt    time.Time  `json:"created_at"`
 	UpdatedAt    *time.Time `json:"updated_at,omitempty"`
@@ -26,7 +26,7 @@ type CreateSensorTypeRequest struct {
 	Description  string `json:"description"`
 	Manufacturer string `json:"manufacturer" validate:"required"`
 	Model        string `json:"model" validate:"required"`
-	Version      int    `json:"version" validate:"required"`
+	Version      string `json:"version" validate:"required"`
 	IsActive     bool   `json:"is_active"`
 }
 
@@ -36,7 +36,7 @@ type UpdateSensorTypeRequest struct {
 	Description  string `json:"description,omitempty"`
 	Manufacturer string `json:"manufacturer,omitempty"`
 	Model        string `json:"model,omitempty"`
-	Version      int    `json:"version,omitempty"`
+	Version      string `json:"version,omitempty"`
 	IsActive     bool   `json:"is_active,omitempty"`
 }
 

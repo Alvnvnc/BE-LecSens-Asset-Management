@@ -1,0 +1,6 @@
+{
+  "sensor_id": "123e4567-e89b-12d3-a456-426614174000",
+  "sensor_type": "temperature",
+  "reading_value": 28.5,
+  "location": "Server Room A"
+}

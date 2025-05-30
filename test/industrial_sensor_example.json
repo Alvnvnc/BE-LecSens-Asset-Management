@@ -1,0 +1,45 @@
+{
+  "asset_sensor_id": "industrial-machine-01",
+  "sensor_type_id": "machine-monitor-v2",
+  "mac_address": "IN:DU:ST:RI:AL:01",
+  "vibration": {
+    "unit": "mm/s",
+    "label": "Vibration Level",
+    "value": 2.3
+  },
+  "motor_temperature": {
+    "unit": "°C", 
+    "label": "Motor Temperature",
+    "value": 65.8
+  },
+  "power_consumption": {
+    "unit": "kW",
+    "label": "Power Consumption",
+    "value": 12.5
+  },
+  "rpm": {
+    "unit": "rpm",
+    "label": "Rotations Per Minute",
+    "value": 1750
+  },
+  "oil_pressure": {
+    "unit": "bar",
+    "label": "Oil Pressure",
+    "value": 4.2
+  },
+  "coolant_temperature": {
+    "unit": "°C",
+    "label": "Coolant Temperature", 
+    "value": 45.1
+  },
+  "status": {
+    "unit": "",
+    "label": "Machine Status",
+    "value": "RUNNING"
+  },
+  "error_code": {
+    "unit": "",
+    "label": "Error Code",
+    "value": "OK"
+  }
+}

@@ -1,0 +1,9 @@
+{
+  "sensor_id": "123e4567-e89b-12d3-a456-426614174000",
+  "sensor_type": "",
+  "reading_value": 25.5,
+  "unit": "",
+  "location": "",
+  "timestamp": "invalid-timestamp",
+  "metadata": {}
+}

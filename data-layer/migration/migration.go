@@ -9,7 +9,7 @@ import (
 	_ "github.com/lib/pq"
 )
 
-// MigrateDatabase creates the database if it doesn't exist and runs all migrations
+// MigrateDatabase creates database if it doesn't exist and runs all migrations
 func MigrateDatabase(cfg *config.Config) error {
 	// First, connect to postgres directly to create the database if needed
 	postgresConn := fmt.Sprintf("host=%s port=%s user=%s password=%s dbname=postgres sslmode=disable",
@@ -114,19 +114,35 @@ func runMigrations(cfg *config.Config) error {
 		return fmt.Errorf("sensor measurement field migration failed: %v", err)
 	}
 
-	// Ensure table sensor_types exists before creating IoT sensor readings table
-	var exists bool
-	err = db.QueryRow("SELECT EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = 'sensor_types')").Scan(&exists)
+	// Run asset sensors migration (required before IoT sensor readings)
+	log.Println("Creating asset sensors table...")
+	if err := CreateAssetSensorTableIfNotExists(db); err != nil {
+		return fmt.Errorf("asset sensor migration failed: %v", err)
+	}
+	log.Println("Asset sensors table created successfully")
+
+	// Ensure required tables exist before creating IoT sensor readings table
+	var sensorTypesExists, assetSensorsExists bool
+	err = db.QueryRow("SELECT EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = 'sensor_types')").Scan(&sensorTypesExists)
 	if err != nil {
 		return fmt.Errorf("failed to check if sensor_types table exists: %v", err)
 	}
 
-	if !exists {
+	err = db.QueryRow("SELECT EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = 'asset_sensors')").Scan(&assetSensorsExists)
+	if err != nil {
+		return fmt.Errorf("failed to check if asset_sensors table exists: %v", err)
+	}
+
+	if !sensorTypesExists {
 		return fmt.Errorf("sensor_types table does not exist, required for IoT sensor readings table")
 	}
 
-	// Run IoT sensor reading migration
-	log.Println("Creating IoT sensor readings table...")
+	if !assetSensorsExists {
+		return fmt.Errorf("asset_sensors table does not exist, required for IoT sensor readings table")
+	}
+
+	// Run IoT sensor reading migration with flexible measurement support
+	log.Println("Creating IoT sensor readings table with flexible measurement support...")
 	if err := CreateIoTSensorReadingTableDirect(db); err != nil {
 		return fmt.Errorf("iot sensor reading migration failed: %v", err)
 	}

@@ -1,0 +1,4 @@
+{
+  "count": 10,
+  "sensor_types": ["temperature", "humidity", "pressure"]
+}

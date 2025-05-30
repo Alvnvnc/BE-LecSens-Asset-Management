@@ -1,0 +1,467 @@
+{
+  "examples": {
+    "single_air_quality_sensor": {
+      "description": "Contoh sensor kualitas udara dengan multiple measurements",
+      "endpoint": "POST /api/v1/iot-sensor-readings/flexible",
+      "data": {
+        "asset_sensor_id": "d906316f-c0bc-44c2-846a-ce5ee6363498",
+        "sensor_type_id": "5c5b5461-e8d6-4c88-93fd-4b04019669bf",
+        "mac_address": "AA:BB:CC:DD:EE:A2",
+        "raw_value": {
+          "unit": "μg/m³",
+          "label": "Raw Value",
+          "value": 45.6
+        },
+        "temperature": {
+          "unit": "°C",
+          "label": "Temperature",
+          "value": 25.3
+        },
+        "humidity": {
+          "unit": "%",
+          "label": "Humidity",
+          "value": 67.8
+        },
+        "pm25": {
+          "unit": "μg/m³",
+          "label": "PM2.5",
+          "value": 12.4
+        },
+        "pm10": {
+          "unit": "μg/m³",
+          "label": "PM10",
+          "value": 23.1
+        }
+      }
+    },
+
+    "weather_station": {
+      "description": "Contoh weather station dengan berbagai parameter cuaca",
+      "endpoint": "POST /api/v1/iot-sensor-readings/flexible",
+      "data": {
+        "asset_sensor_id": "b1234567-c0bc-44c2-846a-ce5ee6363498",
+        "sensor_type_id": "weather-station-001",
+        "mac_address": "WS:01:02:03:04:05",
+        "temperature": {
+          "unit": "°C",
+          "label": "Temperature",
+          "value": 28.5
+        },
+        "humidity": {
+          "unit": "%",
+          "label": "Relative Humidity",
+          "value": 72.3
+        },
+        "pressure": {
+          "unit": "hPa",
+          "label": "Atmospheric Pressure",
+          "value": 1013.25
+        },
+        "wind_speed": {
+          "unit": "m/s",
+          "label": "Wind Speed",
+          "value": 3.2
+        },
+        "wind_direction": {
+          "unit": "°",
+          "label": "Wind Direction",
+          "value": 180
+        },
+        "rainfall": {
+          "unit": "mm",
+          "label": "Rainfall",
+          "value": 0.0
+        },
+        "uv_index": {
+          "unit": "UV",
+          "label": "UV Index",
+          "value": 7
+        }
+      }
+    },
+
+    "industrial_sensor": {
+      "description": "Contoh sensor industri dengan parameter mesin",
+      "endpoint": "POST /api/v1/iot-sensor-readings/flexible",
+      "data": {
+        "asset_sensor_id": "industrial-001",
+        "sensor_type_id": "machine-monitor-v2",
+        "mac_address": "IN:DU:ST:RI:AL:01",
+        "vibration": {
+          "unit": "mm/s",
+          "label": "Vibration Level",
+          "value": 2.3
+        },
+        "motor_temperature": {
+          "unit": "°C",
+          "label": "Motor Temperature",
+          "value": 65.8
+        },
+        "power_consumption": {
+          "unit": "kW",
+          "label": "Power Consumption",
+          "value": 12.5
+        },
+        "rpm": {
+          "unit": "rpm",
+          "label": "Rotations Per Minute",
+          "value": 1750
+        },
+        "oil_pressure": {
+          "unit": "bar",
+          "label": "Oil Pressure",
+          "value": 4.2
+        },
+        "status": {
+          "unit": "",
+          "label": "Machine Status",
+          "value": "RUNNING"
+        }
+      }
+    },
+
+    "smart_building": {
+      "description": "Contoh sensor gedung pintar dengan kontrol energi",
+      "endpoint": "POST /api/v1/iot-sensor-readings/flexible",
+      "data": {
+        "asset_sensor_id": "building-sensor-floor-3",
+        "sensor_type_id": "smart-building-v1",
+        "mac_address": "SB:03:F4:A2:B1:C9",
+        "room_temperature": {
+          "unit": "°C",
+          "label": "Room Temperature",
+          "value": 22.5
+        },
+        "co2_level": {
+          "unit": "ppm",
+          "label": "CO2 Level",
+          "value": 480
+        },
+        "light_intensity": {
+          "unit": "lux",
+          "label": "Light Intensity",
+          "value": 350
+        },
+        "occupancy": {
+          "unit": "persons",
+          "label": "Room Occupancy",
+          "value": 8
+        },
+        "energy_usage": {
+          "unit": "kWh",
+          "label": "Energy Usage",
+          "value": 2.3
+        },
+        "ac_status": {
+          "unit": "",
+          "label": "AC Status",
+          "value": "ON"
+        }
+      }
+    }
+  },
+
+  "batch_examples": {
+    "multiple_air_quality_sensors": {
+      "description": "Contoh multiple sensor kualitas udara dalam satu request",
+      "endpoint": "POST /api/v1/iot-sensor-readings/flexible/batch",
+      "data": {
+        "readings": [
+          {
+            "asset_sensor_id": "sensor-location-1",
+            "sensor_type_id": "air-quality-monitor",
+            "mac_address": "AQ:01:02:03:04:05",
+            "pm25": {
+              "unit": "μg/m³",
+              "label": "PM2.5",
+              "value": 15.2
+            },
+            "pm10": {
+              "unit": "μg/m³",
+              "label": "PM10",
+              "value": 25.8
+            },
+            "temperature": {
+              "unit": "°C",
+              "label": "Temperature",
+              "value": 26.1
+            }
+          },
+          {
+            "asset_sensor_id": "sensor-location-2",
+            "sensor_type_id": "air-quality-monitor",
+            "mac_address": "AQ:01:02:03:04:06",
+            "pm25": {
+              "unit": "μg/m³",
+              "label": "PM2.5",
+              "value": 18.7
+            },
+            "pm10": {
+              "unit": "μg/m³",
+              "label": "PM10",
+              "value": 28.3
+            },
+            "temperature": {
+              "unit": "°C",
+              "label": "Temperature",
+              "value": 25.9
+            }
+          },
+          {
+            "asset_sensor_id": "sensor-location-3",
+            "sensor_type_id": "air-quality-monitor",
+            "mac_address": "AQ:01:02:03:04:07",
+            "pm25": {
+              "unit": "μg/m³",
+              "label": "PM2.5",
+              "value": 12.1
+            },
+            "pm10": {
+              "unit": "μg/m³",
+              "label": "PM10",
+              "value": 22.4
+            },
+            "temperature": {
+              "unit": "°C",
+              "label": "Temperature",
+              "value": 24.8
+            }
+          }
+        ]
+      }
+    },
+
+    "mixed_sensor_types": {
+      "description": "Contoh berbagai jenis sensor dalam satu batch",
+      "endpoint": "POST /api/v1/iot-sensor-readings/flexible/batch",
+      "data": {
+        "readings": [
+          {
+            "asset_sensor_id": "temp-sensor-room-1",
+            "sensor_type_id": "temperature-only",
+            "mac_address": "TP:01:AA:BB:CC:DD",
+            "temperature": {
+              "unit": "°C",
+              "label": "Temperature",
+              "value": 23.5
+            }
+          },
+          {
+            "asset_sensor_id": "pressure-sensor-tank-1",
+            "sensor_type_id": "pressure-monitor",
+            "mac_address": "PR:02:EE:FF:11:22",
+            "pressure": {
+              "unit": "bar",
+              "label": "Tank Pressure",
+              "value": 5.8
+            },
+            "level": {
+              "unit": "%",
+              "label": "Tank Level",
+              "value": 78.5
+            }
+          },
+          {
+            "asset_sensor_id": "flow-sensor-pipe-1",
+            "sensor_type_id": "flow-meter",
+            "mac_address": "FL:03:33:44:55:66",
+            "flow_rate": {
+              "unit": "L/min",
+              "label": "Flow Rate",
+              "value": 25.3
+            },
+            "total_volume": {
+              "unit": "L",
+              "label": "Total Volume",
+              "value": 1250.7
+            }
+          }
+        ]
+      }
+    }
+  },
+
+  "text_parsing_examples": {
+    "csv_format": {
+      "description": "Contoh parsing data CSV format",
+      "endpoint": "POST /api/v1/iot-sensor-readings/parse-text",
+      "data": {
+        "text_data": "temperature:25.3°C,humidity:67%,pressure:1013.2hPa",
+        "sensor_type": "weather_station",
+        "asset_sensor_id": "weather-01",
+        "sensor_type_id": "weather-station-type",
+        "mac_address": "WS:AA:BB:CC:DD:EE"
+      }
+    },
+
+    "json_string": {
+      "description": "Contoh parsing string JSON",
+      "endpoint": "POST /api/v1/iot-sensor-readings/parse-text",
+      "data": {
+        "text_data": "{\"temp\":24.5,\"hum\":65,\"press\":1012}",
+        "sensor_type": "compact_weather",
+        "asset_sensor_id": "compact-weather-01",
+        "sensor_type_id": "compact-weather-type",
+        "mac_address": "CW:11:22:33:44:55"
+      }
+    },
+
+    "key_value_pairs": {
+      "description": "Contoh parsing key-value pairs",
+      "endpoint": "POST /api/v1/iot-sensor-readings/parse-text",
+      "data": {
+        "text_data": "pm25=15.2 pm10=28.1 temp=26.8 hum=72",
+        "sensor_type": "air_quality",
+        "asset_sensor_id": "air-quality-01",
+        "sensor_type_id": "air-quality-type",
+        "mac_address": "AQ:66:77:88:99:AA"
+      }
+    },
+
+    "industrial_format": {
+      "description": "Contoh parsing format data industri",
+      "endpoint": "POST /api/v1/iot-sensor-readings/parse-text",
+      "data": {
+        "text_data": "VIB:2.3mm/s|TEMP:65.8°C|PWR:12.5kW|RPM:1750|OIL:4.2bar|STATUS:RUNNING",
+        "sensor_type": "industrial_monitor",
+        "asset_sensor_id": "machine-01",
+        "sensor_type_id": "machine-monitor-type",
+        "mac_address": "IN:AA:BB:CC:DD:EE"
+      }
+    }
+  },
+
+  "curl_examples": {
+    "single_flexible_reading": {
+      "description": "CURL command untuk single flexible reading",
+      "command": "curl -X POST http://localhost:8080/api/v1/iot-sensor-readings/flexible \\\n  -H \"Content-Type: application/json\" \\\n  -H \"Authorization: Bearer YOUR_JWT_TOKEN\" \\\n  -d '{\n    \"asset_sensor_id\": \"d906316f-c0bc-44c2-846a-ce5ee6363498\",\n    \"sensor_type_id\": \"5c5b5461-e8d6-4c88-93fd-4b04019669bf\",\n    \"mac_address\": \"AA:BB:CC:DD:EE:A2\",\n    \"temperature\": {\n      \"unit\": \"°C\",\n      \"label\": \"Temperature\",\n      \"value\": 25.3\n    },\n    \"humidity\": {\n      \"unit\": \"%\",\n      \"label\": \"Humidity\",\n      \"value\": 67.8\n    }\n  }'"
+    },
+
+    "batch_flexible_reading": {
+      "description": "CURL command untuk batch flexible reading",
+      "command": "curl -X POST http://localhost:8080/api/v1/iot-sensor-readings/flexible/batch \\\n  -H \"Content-Type: application/json\" \\\n  -H \"Authorization: Bearer YOUR_JWT_TOKEN\" \\\n  -d @batch_example.json"
+    },
+
+    "text_parsing": {
+      "description": "CURL command untuk text parsing",
+      "command": "curl -X POST http://localhost:8080/api/v1/iot-sensor-readings/parse-text \\\n  -H \"Content-Type: application/json\" \\\n  -H \"Authorization: Bearer YOUR_JWT_TOKEN\" \\\n  -d '{\n    \"text_data\": \"temperature:25.3°C,humidity:67%,pressure:1013.2hPa\",\n    \"sensor_type\": \"weather_station\",\n    \"asset_sensor_id\": \"weather-01\",\n    \"sensor_type_id\": \"weather-station-type\",\n    \"mac_address\": \"WS:AA:BB:CC:DD:EE\"\n  }'"
+    }
+  },
+
+  "array_format_examples": {
+    "simple_array": {
+      "description": "Contoh array sederhana untuk multiple readings dari sensor yang sama",
+      "data": [
+        {
+          "asset_sensor_id": "sensor-01",
+          "sensor_type_id": "temp-sensor",
+          "mac_address": "TS:01:01:01:01:01",
+          "temperature": {"unit": "°C", "label": "Temperature", "value": 23.1}
+        },
+        {
+          "asset_sensor_id": "sensor-01",
+          "sensor_type_id": "temp-sensor", 
+          "mac_address": "TS:01:01:01:01:01",
+          "temperature": {"unit": "°C", "label": "Temperature", "value": 23.5}
+        },
+        {
+          "asset_sensor_id": "sensor-01",
+          "sensor_type_id": "temp-sensor",
+          "mac_address": "TS:01:01:01:01:01", 
+          "temperature": {"unit": "°C", "label": "Temperature", "value": 24.0}
+        }
+      ]
+    },
+
+    "mixed_measurements_array": {
+      "description": "Contoh array dengan berbagai jenis pengukuran",
+      "data": [
+        {
+          "asset_sensor_id": "multi-sensor-01",
+          "sensor_type_id": "environmental-monitor",
+          "mac_address": "EN:01:02:03:04:05",
+          "temperature": {"unit": "°C", "label": "Temperature", "value": 22.8},
+          "humidity": {"unit": "%", "label": "Humidity", "value": 65.2},
+          "co2": {"unit": "ppm", "label": "CO2", "value": 420}
+        },
+        {
+          "asset_sensor_id": "multi-sensor-02", 
+          "sensor_type_id": "environmental-monitor",
+          "mac_address": "EN:01:02:03:04:06",
+          "temperature": {"unit": "°C", "label": "Temperature", "value": 23.1},
+          "humidity": {"unit": "%", "label": "Humidity", "value": 63.8},
+          "co2": {"unit": "ppm", "label": "CO2", "value": 435}
+        }
+      ]
+    },
+
+    "time_series_array": {
+      "description": "Contoh array time series dengan timestamp",
+      "data": [
+        {
+          "asset_sensor_id": "time-series-01",
+          "sensor_type_id": "logger",
+          "mac_address": "TS:10:20:30:40:50",
+          "reading_time": "2025-05-30T08:00:00Z",
+          "value": {"unit": "V", "label": "Voltage", "value": 12.1}
+        },
+        {
+          "asset_sensor_id": "time-series-01",
+          "sensor_type_id": "logger", 
+          "mac_address": "TS:10:20:30:40:50",
+          "reading_time": "2025-05-30T08:01:00Z",
+          "value": {"unit": "V", "label": "Voltage", "value": 12.3}
+        },
+        {
+          "asset_sensor_id": "time-series-01",
+          "sensor_type_id": "logger",
+          "mac_address": "TS:10:20:30:40:50", 
+          "reading_time": "2025-05-30T08:02:00Z",
+          "value": {"unit": "V", "label": "Voltage", "value": 12.0}
+        }
+      ]
+    }
+  },
+
+  "testing_scenarios": {
+    "scenario_1": {
+      "name": "Test Basic Flexible Reading",
+      "steps": [
+        "1. Gunakan single_air_quality_sensor example",
+        "2. POST ke /api/v1/iot-sensor-readings/flexible",
+        "3. Verifikasi response dan database storage",
+        "4. Check iot_sensor_measurement_data table"
+      ]
+    },
+    
+    "scenario_2": {
+      "name": "Test Batch Processing",
+      "steps": [
+        "1. Gunakan multiple_air_quality_sensors example",
+        "2. POST ke /api/v1/iot-sensor-readings/flexible/batch", 
+        "3. Verifikasi semua readings tersimpan",
+        "4. Check measurement data untuk setiap reading"
+      ]
+    },
+
+    "scenario_3": {
+      "name": "Test Text Parsing",
+      "steps": [
+        "1. Gunakan csv_format example",
+        "2. POST ke /api/v1/iot-sensor-readings/parse-text",
+        "3. Verifikasi parsing berhasil",
+        "4. Gunakan hasil parsing untuk create reading"
+      ]
+    },
+
+    "scenario_4": {
+      "name": "Test Different Data Types",
+      "steps": [
+        "1. Test dengan numeric values (int, float)",
+        "2. Test dengan string values",
+        "3. Test dengan boolean values",
+        "4. Verifikasi semua types tersimpan dengan benar"
+      ]
+    }
+  }
+}

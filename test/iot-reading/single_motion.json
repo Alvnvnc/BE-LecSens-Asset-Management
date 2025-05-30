@@ -1,0 +1,14 @@
+{
+  "sensor_id": "ghi789jk-e89b-12d3-a456-426614174005",
+  "sensor_type": "motion",
+  "reading_value": 1,
+  "unit": "detected",
+  "location": "Entrance Hall",
+  "timestamp": "2025-05-29T11:10:00Z",
+  "metadata": {
+    "calibration_status": "calibrated",
+    "battery_level": 75,
+    "detection_range": "5m",
+    "sensitivity": "high"
+  }
+}

@@ -274,3 +274,31 @@ Examples:
   go run cmd/cleanup-duplicates/main.go cleanup-all
   go run cmd/cleanup-duplicates/main.go cleanup-asset 123e4567-e89b-12d3-a456-426614174000`)
 }
+
+// RunCleanupDuplicates runs the cleanup duplicates functionality
+func RunCleanupDuplicates(assetID string, dryRun bool) error {
+	// Create cleanup command without passing db (it creates its own connection)
+	cleanupCmd, err := NewCleanupDuplicatesCommand()
+	if err != nil {
+		return fmt.Errorf("failed to create cleanup command: %w", err)
+	}
+	defer cleanupCmd.Close()
+
+	ctx := context.Background()
+
+	if assetID != "" {
+		// Cleanup specific asset
+		log.Printf("Starting cleanup for asset: %s", assetID)
+		err = cleanupCmd.CleanupAssetDuplicates(ctx, assetID, dryRun)
+	} else {
+		// Cleanup all assets
+		log.Println("Starting cleanup for all assets")
+		err = cleanupCmd.CleanupAllDuplicates(ctx, dryRun)
+	}
+
+	if err != nil {
+		return fmt.Errorf("cleanup failed: %w", err)
+	}
+
+	return nil
+}

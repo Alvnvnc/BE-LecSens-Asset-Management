@@ -1,0 +1,63 @@
+[
+  {
+    "sensor_id": "123e4567-e89b-12d3-a456-426614174000",
+    "sensor_type": "temperature",
+    "reading_value": 23.5,
+    "unit": "°C",
+    "location": "Server Room A",
+    "timestamp": "2025-05-29T10:00:00Z",
+    "metadata": {
+      "calibration_status": "calibrated",
+      "battery_level": 85
+    }
+  },
+  {
+    "sensor_id": "456e7890-e89b-12d3-a456-426614174001",
+    "sensor_type": "humidity",
+    "reading_value": 62.5,
+    "unit": "%",
+    "location": "Data Center B",
+    "timestamp": "2025-05-29T10:00:00Z",
+    "metadata": {
+      "calibration_status": "calibrated",
+      "battery_level": 78
+    }
+  },
+  {
+    "sensor_id": "789e0123-e89b-12d3-a456-426614174002",
+    "sensor_type": "pressure",
+    "reading_value": 1013.25,
+    "unit": "hPa",
+    "location": "Laboratory 1",
+    "timestamp": "2025-05-29T10:00:00Z",
+    "metadata": {
+      "calibration_status": "calibrated",
+      "battery_level": 92,
+      "altitude": 100.5
+    }
+  },
+  {
+    "sensor_id": "123e4567-e89b-12d3-a456-426614174000",
+    "sensor_type": "temperature",
+    "reading_value": 24.2,
+    "unit": "°C",
+    "location": "Server Room A",
+    "timestamp": "2025-05-29T10:15:00Z",
+    "metadata": {
+      "calibration_status": "calibrated",
+      "battery_level": 84
+    }
+  },
+  {
+    "sensor_id": "456e7890-e89b-12d3-a456-426614174001",
+    "sensor_type": "humidity",
+    "reading_value": 64.8,
+    "unit": "%",
+    "location": "Data Center B",
+    "timestamp": "2025-05-29T10:15:00Z",
+    "metadata": {
+      "calibration_status": "calibrated",
+      "battery_level": 77
+    }
+  }
+]

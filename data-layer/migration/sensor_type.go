@@ -15,7 +15,7 @@ func CreateSensorTypeTables(db *sql.DB) error {
 			description TEXT,
 			manufacturer VARCHAR(255),
 			model VARCHAR(255),
-			version INTEGER NOT NULL DEFAULT 1,
+			version VARCHAR(50) NOT NULL DEFAULT '1.0.0',
 			is_active BOOLEAN NOT NULL DEFAULT true,
 			created_at TIMESTAMP NOT NULL,
 			updated_at TIMESTAMP

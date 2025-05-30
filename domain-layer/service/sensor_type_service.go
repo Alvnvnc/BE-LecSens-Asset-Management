@@ -133,7 +133,7 @@ func (s *SensorTypeService) UpdateSensorType(ctx context.Context, id uuid.UUID, 
 	if req.Model != "" {
 		existingSensorType.Model = req.Model
 	}
-	if req.Version != 0 {
+	if req.Version != "" {
 		existingSensorType.Version = req.Version
 	}
 	existingSensorType.IsActive = req.IsActive
@@ -228,7 +228,7 @@ func (s *SensorTypeService) UpdateSensorTypePartial(ctx context.Context, id uuid
 		existingSensorType.Model = model.(string)
 	}
 	if version, exists := updateRequest["version"]; exists && version != nil {
-		existingSensorType.Version = int(version.(float64))
+		existingSensorType.Version = version.(string)
 	}
 	if isActive, exists := updateRequest["is_active"]; exists && isActive != nil {
 		existingSensorType.IsActive = isActive.(bool)

@@ -34,6 +34,7 @@ type UpdateAssetRequest struct {
 	LocationID  *uuid.UUID       `json:"location_id,omitempty"`
 	Status      *string          `json:"status,omitempty"`
 	Properties  *json.RawMessage `json:"properties,omitempty"`
+	TenantID    *uuid.UUID       `json:"tenant_id,omitempty"` // Added for fixing assets without tenant
 }
 
 // AssetController handles HTTP requests for asset operations
@@ -60,6 +61,13 @@ func (c *AssetController) CreateAsset(ctx *gin.Context) {
 
 	// Generate new UUID for the asset
 	asset.ID = uuid.New()
+
+	// Get tenant ID from context (for SuperAdmin, we need to set it explicitly)
+	if tenantIDStr := ctx.GetString("tenant_id"); tenantIDStr != "" {
+		if tenantID, err := uuid.Parse(tenantIDStr); err == nil {
+			asset.TenantID = &tenantID
+		}
+	}
 
 	// Create the asset
 	if err := c.assetService.CreateAsset(ctx.Request.Context(), &asset); err != nil {
@@ -127,6 +135,24 @@ func (c *AssetController) UpdateAsset(ctx *gin.Context) {
 	if err := ctx.ShouldBindJSON(&updateReq); err != nil {
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
+	}
+
+	// Get tenant ID from context for fixing assets without tenant assignment
+	if contextTenantID := ctx.GetString("tenant_id"); contextTenantID != "" {
+		// Get existing asset first to check if it needs tenant assignment
+		existingAsset, err := c.assetService.GetAsset(ctx.Request.Context(), id)
+		if err != nil {
+			ctx.JSON(http.StatusNotFound, gin.H{"error": "asset not found"})
+			return
+		}
+
+		// If asset doesn't have tenant_id but we have one in context, assign it
+		if existingAsset.TenantID == nil {
+			if tenantUUID, parseErr := uuid.Parse(contextTenantID); parseErr == nil {
+				// Add tenant_id to the update request
+				updateReq.TenantID = &tenantUUID
+			}
+		}
 	}
 
 	// Update the asset with partial data

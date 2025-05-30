@@ -1,0 +1,112 @@
+[
+  {
+    "asset_sensor_id": "temp-sensor-room-1",
+    "sensor_type_id": "temperature-only",
+    "mac_address": "TP:01:AA:BB:CC:DD",
+    "temperature": {
+      "unit": "°C",
+      "label": "Room Temperature",
+      "value": 23.5
+    }
+  },
+  {
+    "asset_sensor_id": "pressure-sensor-tank-1", 
+    "sensor_type_id": "pressure-monitor",
+    "mac_address": "PR:02:EE:FF:11:22",
+    "pressure": {
+      "unit": "bar",
+      "label": "Tank Pressure",
+      "value": 5.8
+    },
+    "level": {
+      "unit": "%",
+      "label": "Tank Level",
+      "value": 78.5
+    }
+  },
+  {
+    "asset_sensor_id": "flow-sensor-pipe-1",
+    "sensor_type_id": "flow-meter", 
+    "mac_address": "FL:03:33:44:55:66",
+    "flow_rate": {
+      "unit": "L/min",
+      "label": "Flow Rate",
+      "value": 25.3
+    },
+    "total_volume": {
+      "unit": "L",
+      "label": "Total Volume",
+      "value": 1250.7
+    },
+    "temperature": {
+      "unit": "°C",
+      "label": "Fluid Temperature",
+      "value": 18.2
+    }
+  },
+  {
+    "asset_sensor_id": "multi-sensor-env-1",
+    "sensor_type_id": "environmental-complete",
+    "mac_address": "EN:04:77:88:99:AA",
+    "temperature": {
+      "unit": "°C", 
+      "label": "Air Temperature",
+      "value": 24.1
+    },
+    "humidity": {
+      "unit": "%",
+      "label": "Relative Humidity",
+      "value": 68.9
+    },
+    "co2": {
+      "unit": "ppm",
+      "label": "CO2 Level",
+      "value": 425
+    },
+    "light": {
+      "unit": "lux",
+      "label": "Light Intensity", 
+      "value": 450
+    },
+    "noise": {
+      "unit": "dB",
+      "label": "Noise Level",
+      "value": 42.5
+    }
+  },
+  {
+    "asset_sensor_id": "power-meter-1",
+    "sensor_type_id": "electrical-monitor",
+    "mac_address": "PM:05:BB:CC:DD:EE",
+    "voltage": {
+      "unit": "V",
+      "label": "Voltage",
+      "value": 220.5
+    },
+    "current": {
+      "unit": "A",
+      "label": "Current",
+      "value": 5.2
+    },
+    "power": {
+      "unit": "W",
+      "label": "Active Power",
+      "value": 1146.6
+    },
+    "energy": {
+      "unit": "kWh",
+      "label": "Energy Consumed",
+      "value": 15.8
+    },
+    "frequency": {
+      "unit": "Hz",
+      "label": "Frequency",
+      "value": 50.0
+    },
+    "power_factor": {
+      "unit": "",
+      "label": "Power Factor",
+      "value": 0.98
+    }
+  }
+]

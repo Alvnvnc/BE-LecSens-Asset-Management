@@ -23,8 +23,7 @@ func SetupAssetRoutes(router *gin.Engine, assetController *controller.AssetContr
 
 		// SuperAdmin only routes - use SuperAdmin middleware for role validation
 		superAdminGroup := router.Group("/api/v1/superadmin/assets")
-		superAdminGroup.Use(middleware.TenantMiddleware())
-		superAdminGroup.Use(middleware.RequireSuperAdminMiddleware())
+		superAdminGroup.Use(middleware.SuperAdminPassthroughMiddleware())
 		{
 			// List all assets (for SuperAdmin - across all tenants)
 			superAdminGroup.GET("", assetController.ListAllAssets)

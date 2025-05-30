@@ -3,8 +3,10 @@ package controller
 import (
 	"be-lecsens/asset_management/domain-layer/service"
 	"be-lecsens/asset_management/helpers/dto"
+	"fmt"
 	"net/http"
 	"strconv"
+	"strings"
 
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
@@ -67,12 +69,54 @@ func (c *SensorMeasurementFieldController) Create(ctx *gin.Context) {
 		return
 	}
 
+	// Validate data type
+	if req.DataType != "" {
+		switch req.DataType {
+		case "number", "string", "boolean", "array", "object":
+			// Valid data types
+		default:
+			ctx.JSON(http.StatusBadRequest, gin.H{
+				"error":   "Invalid data type",
+				"details": fmt.Sprintf("Unsupported data type: %s. Supported types are: number, string, boolean, array, object", req.DataType),
+			})
+			return
+		}
+	}
+
+	// Validate numeric constraints
+	if req.DataType == "number" {
+		if req.Min != nil && req.Max != nil && *req.Min > *req.Max {
+			ctx.JSON(http.StatusBadRequest, gin.H{
+				"error":   "Invalid numeric constraints",
+				"details": "Min value cannot be greater than max value",
+			})
+			return
+		}
+	}
+
 	field, err := c.service.Create(ctx, &req)
 	if err != nil {
-		ctx.JSON(http.StatusInternalServerError, gin.H{
-			"error":   "Failed to create sensor measurement field",
-			"details": err.Error(),
-		})
+		// Handle specific error types
+		switch {
+		case strings.Contains(err.Error(), "sensor measurement type ID is required"),
+			strings.Contains(err.Error(), "name is required"),
+			strings.Contains(err.Error(), "label is required"),
+			strings.Contains(err.Error(), "data type is required"):
+			ctx.JSON(http.StatusBadRequest, gin.H{
+				"error":   "Validation error",
+				"details": err.Error(),
+			})
+		case strings.Contains(err.Error(), "unsupported data type"):
+			ctx.JSON(http.StatusBadRequest, gin.H{
+				"error":   "Invalid data type",
+				"details": err.Error(),
+			})
+		default:
+			ctx.JSON(http.StatusInternalServerError, gin.H{
+				"error":   "Failed to create sensor measurement field",
+				"details": err.Error(),
+			})
+		}
 		return
 	}
 
@@ -171,12 +215,49 @@ func (c *SensorMeasurementFieldController) Update(ctx *gin.Context) {
 		return
 	}
 
+	// Validate data type if provided
+	if req.DataType != nil {
+		switch *req.DataType {
+		case "number", "string", "boolean", "array", "object":
+			// Valid data types
+		default:
+			ctx.JSON(http.StatusBadRequest, gin.H{
+				"error":   "Invalid data type",
+				"details": fmt.Sprintf("Unsupported data type: %s. Supported types are: number, string, boolean, array, object", *req.DataType),
+			})
+			return
+		}
+	}
+
+	// Validate numeric constraints if both min and max are provided
+	if req.Min != nil && req.Max != nil && *req.Min > *req.Max {
+		ctx.JSON(http.StatusBadRequest, gin.H{
+			"error":   "Invalid numeric constraints",
+			"details": "Min value cannot be greater than max value",
+		})
+		return
+	}
+
 	field, err := c.service.Update(ctx, id, &req)
 	if err != nil {
-		ctx.JSON(http.StatusInternalServerError, gin.H{
-			"error":   "Failed to update sensor measurement field",
-			"details": err.Error(),
-		})
+		// Handle specific error types
+		switch {
+		case strings.Contains(err.Error(), "sensor measurement field not found"):
+			ctx.JSON(http.StatusNotFound, gin.H{
+				"error":   "Sensor measurement field not found",
+				"details": err.Error(),
+			})
+		case strings.Contains(err.Error(), "unsupported data type"):
+			ctx.JSON(http.StatusBadRequest, gin.H{
+				"error":   "Invalid data type",
+				"details": err.Error(),
+			})
+		default:
+			ctx.JSON(http.StatusInternalServerError, gin.H{
+				"error":   "Failed to update sensor measurement field",
+				"details": err.Error(),
+			})
+		}
 		return
 	}
 

@@ -26,11 +26,10 @@ func NewSensorMeasurementTypeRepository(db *sql.DB) *SensorMeasurementTypeReposi
 func (r *SensorMeasurementTypeRepository) Create(ctx context.Context, sensorMeasurementType *dto.SensorMeasurementTypeDTO) error {
 	query := `
 		INSERT INTO sensor_measurement_types (
-			id, sensor_type_id, name, description, unit_of_measure,
-			min_accepted_value, max_accepted_value, properties_schema,
+			id, sensor_type_id, name, description, properties_schema,
 			ui_configuration, version, is_active, created_at, updated_at
 		) VALUES (
-			$1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13
+			$1, $2, $3, $4, $5, $6, $7, $8, $9, $10
 		)
 	`
 
@@ -49,9 +48,6 @@ func (r *SensorMeasurementTypeRepository) Create(ctx context.Context, sensorMeas
 		sensorMeasurementType.SensorTypeID,
 		sensorMeasurementType.Name,
 		sensorMeasurementType.Description,
-		sensorMeasurementType.UnitOfMeasure,
-		sensorMeasurementType.MinAcceptedValue,
-		sensorMeasurementType.MaxAcceptedValue,
 		propertiesSchema,
 		uiConfig,
 		sensorMeasurementType.Version,
@@ -70,8 +66,7 @@ func (r *SensorMeasurementTypeRepository) Create(ctx context.Context, sensorMeas
 // GetByID retrieves a sensor measurement type by its ID
 func (r *SensorMeasurementTypeRepository) GetByID(ctx context.Context, id uuid.UUID) (*dto.SensorMeasurementTypeDTO, error) {
 	query := `
-		SELECT id, sensor_type_id, name, description, unit_of_measure,
-			min_accepted_value, max_accepted_value, properties_schema,
+		SELECT id, sensor_type_id, name, description, properties_schema,
 			ui_configuration, version, is_active, created_at, updated_at
 		FROM sensor_measurement_types
 		WHERE id = $1
@@ -85,9 +80,6 @@ func (r *SensorMeasurementTypeRepository) GetByID(ctx context.Context, id uuid.U
 		&sensorMeasurementType.SensorTypeID,
 		&sensorMeasurementType.Name,
 		&sensorMeasurementType.Description,
-		&sensorMeasurementType.UnitOfMeasure,
-		&sensorMeasurementType.MinAcceptedValue,
-		&sensorMeasurementType.MaxAcceptedValue,
 		&propertiesSchema,
 		&uiConfig,
 		&sensorMeasurementType.Version,
@@ -131,8 +123,7 @@ func (r *SensorMeasurementTypeRepository) List(ctx context.Context, offset, limi
 
 	// Get paginated data
 	query := `
-		SELECT id, sensor_type_id, name, description, unit_of_measure,
-			min_accepted_value, max_accepted_value, properties_schema,
+		SELECT id, sensor_type_id, name, description, properties_schema,
 			ui_configuration, version, is_active, created_at, updated_at
 		FROM sensor_measurement_types
 		ORDER BY created_at DESC
@@ -155,9 +146,6 @@ func (r *SensorMeasurementTypeRepository) List(ctx context.Context, offset, limi
 			&sensorMeasurementType.SensorTypeID,
 			&sensorMeasurementType.Name,
 			&sensorMeasurementType.Description,
-			&sensorMeasurementType.UnitOfMeasure,
-			&sensorMeasurementType.MinAcceptedValue,
-			&sensorMeasurementType.MaxAcceptedValue,
 			&propertiesSchema,
 			&uiConfig,
 			&sensorMeasurementType.Version,
@@ -193,11 +181,9 @@ func (r *SensorMeasurementTypeRepository) List(ctx context.Context, offset, limi
 func (r *SensorMeasurementTypeRepository) Update(ctx context.Context, sensorMeasurementType *dto.SensorMeasurementTypeDTO) error {
 	query := `
 		UPDATE sensor_measurement_types
-		SET name = $1, description = $2, unit_of_measure = $3,
-			min_accepted_value = $4, max_accepted_value = $5,
-			properties_schema = $6, ui_configuration = $7,
-			version = $8, is_active = $9, updated_at = $10
-		WHERE id = $11
+		SET name = $1, description = $2, properties_schema = $3,
+			ui_configuration = $4, version = $5, is_active = $6, updated_at = $7
+		WHERE id = $8
 	`
 
 	propertiesSchema, err := json.Marshal(sensorMeasurementType.PropertiesSchema)
@@ -213,9 +199,6 @@ func (r *SensorMeasurementTypeRepository) Update(ctx context.Context, sensorMeas
 	result, err := r.db.ExecContext(ctx, query,
 		sensorMeasurementType.Name,
 		sensorMeasurementType.Description,
-		sensorMeasurementType.UnitOfMeasure,
-		sensorMeasurementType.MinAcceptedValue,
-		sensorMeasurementType.MaxAcceptedValue,
 		propertiesSchema,
 		uiConfig,
 		sensorMeasurementType.Version,
@@ -264,8 +247,7 @@ func (r *SensorMeasurementTypeRepository) Delete(ctx context.Context, id uuid.UU
 // GetActive retrieves all active sensor measurement types
 func (r *SensorMeasurementTypeRepository) GetActive(ctx context.Context) ([]dto.SensorMeasurementTypeDTO, error) {
 	query := `
-		SELECT id, sensor_type_id, name, description, unit_of_measure,
-			min_accepted_value, max_accepted_value, properties_schema,
+		SELECT id, sensor_type_id, name, description, properties_schema,
 			ui_configuration, version, is_active, created_at, updated_at
 		FROM sensor_measurement_types
 		WHERE is_active = true
@@ -288,9 +270,6 @@ func (r *SensorMeasurementTypeRepository) GetActive(ctx context.Context) ([]dto.
 			&sensorMeasurementType.SensorTypeID,
 			&sensorMeasurementType.Name,
 			&sensorMeasurementType.Description,
-			&sensorMeasurementType.UnitOfMeasure,
-			&sensorMeasurementType.MinAcceptedValue,
-			&sensorMeasurementType.MaxAcceptedValue,
 			&propertiesSchema,
 			&uiConfig,
 			&sensorMeasurementType.Version,
@@ -325,8 +304,7 @@ func (r *SensorMeasurementTypeRepository) GetActive(ctx context.Context) ([]dto.
 // GetBySensorTypeID retrieves all measurement types for a specific sensor type
 func (r *SensorMeasurementTypeRepository) GetBySensorTypeID(ctx context.Context, sensorTypeID uuid.UUID) ([]dto.SensorMeasurementTypeDTO, error) {
 	query := `
-		SELECT id, sensor_type_id, name, description, unit_of_measure,
-			min_accepted_value, max_accepted_value, properties_schema,
+		SELECT id, sensor_type_id, name, description, properties_schema,
 			ui_configuration, version, is_active, created_at, updated_at
 		FROM sensor_measurement_types
 		WHERE sensor_type_id = $1
@@ -349,9 +327,6 @@ func (r *SensorMeasurementTypeRepository) GetBySensorTypeID(ctx context.Context,
 			&sensorMeasurementType.SensorTypeID,
 			&sensorMeasurementType.Name,
 			&sensorMeasurementType.Description,
-			&sensorMeasurementType.UnitOfMeasure,
-			&sensorMeasurementType.MinAcceptedValue,
-			&sensorMeasurementType.MaxAcceptedValue,
 			&propertiesSchema,
 			&uiConfig,
 			&sensorMeasurementType.Version,

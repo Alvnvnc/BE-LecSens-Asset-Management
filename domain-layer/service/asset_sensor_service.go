@@ -291,13 +291,23 @@ func (s *AssetSensorService) GetSensorsByStatus(ctx context.Context, status stri
 
 // GetCompleteSensorInfo retrieves complete sensor information including sensor type and measurement types
 func (s *AssetSensorService) GetCompleteSensorInfo(ctx context.Context, id uuid.UUID) (*repository.AssetSensorWithDetails, error) {
+	log.Printf("DEBUG: GetCompleteSensorInfo service called with sensor ID: %s", id)
+
 	sensor, err := s.assetSensorRepo.GetByID(ctx, id)
 	if err != nil {
+		log.Printf("DEBUG: Error from repository GetByID: %v", err)
 		return nil, fmt.Errorf("failed to get complete sensor info: %w", err)
 	}
 	if sensor == nil {
+		log.Printf("DEBUG: Sensor not found in repository, returning NotFoundError")
 		return nil, common.NewNotFoundError("asset sensor", id.String())
 	}
+
+	log.Printf("DEBUG: Successfully retrieved sensor from repository")
+	log.Printf("DEBUG: Sensor details - ID: %s, Name: %s, SensorType.Version: %s",
+		sensor.AssetSensor.ID, sensor.AssetSensor.Name, sensor.SensorType.Version)
+	log.Printf("DEBUG: Number of measurement types: %d", len(sensor.MeasurementTypes))
+
 	return sensor, nil
 }
 

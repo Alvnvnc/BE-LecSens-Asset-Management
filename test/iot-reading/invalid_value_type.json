@@ -1,0 +1,11 @@
+{
+  "sensor_id": "123e4567-e89b-12d3-a456-426614174000",
+  "sensor_type": "temperature",
+  "reading_value": "not-a-number",
+  "unit": "°C",
+  "location": "Test Location",
+  "timestamp": "2025-05-29T12:00:00Z",
+  "metadata": {
+    "test": "invalid_value_type"
+  }
+}

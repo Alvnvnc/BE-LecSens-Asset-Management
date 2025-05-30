@@ -1,0 +1,9 @@
+{
+    "asset_sensor_id": "14408bbe-0d37-46cc-97aa-68f8d86eb451",
+    "mac_address": "AA:BB:CC:DD:EE:A2",
+    "measurement_data": {
+        "humidity": 65.54,
+        "unit": "Percent"
+    },
+    "reading_time": "2025-05-29T18:42:42.056Z"
+}

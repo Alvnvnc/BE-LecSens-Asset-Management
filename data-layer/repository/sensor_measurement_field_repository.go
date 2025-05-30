@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/google/uuid"
@@ -156,9 +157,6 @@ func (r *SensorMeasurementFieldRepository) GetByID(ctx context.Context, id uuid.
 		WHERE id = $1
 	`
 
-	// Add debug logging
-	fmt.Printf("DEBUG: Querying sensor_measurement_fields with ID: %s\n", id.String())
-
 	field := &SensorMeasurementField{}
 	err := r.db.QueryRowContext(ctx, query, id).Scan(
 		&field.ID,
@@ -177,14 +175,11 @@ func (r *SensorMeasurementFieldRepository) GetByID(ctx context.Context, id uuid.
 
 	if err != nil {
 		if err == sql.ErrNoRows {
-			fmt.Printf("DEBUG: No rows found for ID: %s\n", id.String())
 			return nil, nil
 		}
-		fmt.Printf("DEBUG: Database error for ID %s: %v\n", id.String(), err)
 		return nil, err
 	}
 
-	fmt.Printf("DEBUG: Found field with ID: %s, Name: %s\n", field.ID.String(), field.Name)
 	return field, nil
 }
 
@@ -319,4 +314,135 @@ func (r *SensorMeasurementFieldRepository) GetRequiredFields(ctx context.Context
 	}
 
 	return fields, nil
+}
+
+// AddDynamicColumns adds dynamic columns to the iot_sensor_readings table based on measurement fields
+func (r *SensorMeasurementFieldRepository) AddDynamicColumns(ctx context.Context, fields []SensorMeasurementField) error {
+	// Start a transaction
+	tx, err := r.db.BeginTx(ctx, nil)
+	if err != nil {
+		return fmt.Errorf("failed to begin transaction: %w", err)
+	}
+	defer tx.Rollback()
+
+	// Check if columns exist and add them if they don't
+	for _, field := range fields {
+		// Check if column exists
+		var exists bool
+		checkQuery := `
+			SELECT EXISTS (
+				SELECT 1 
+				FROM information_schema.columns 
+				WHERE table_name = 'iot_sensor_readings' 
+				AND column_name = $1
+			)`
+		err := tx.QueryRowContext(ctx, checkQuery, field.Name).Scan(&exists)
+		if err != nil {
+			return fmt.Errorf("failed to check if column exists: %w", err)
+		}
+
+		if !exists {
+			// Determine column type based on data type
+			var columnType string
+			var defaultValue string
+			switch field.DataType {
+			case "number":
+				// Use DOUBLE PRECISION for all numeric values
+				columnType = "DOUBLE PRECISION"
+				defaultValue = "NULL"
+
+				// Add constraints if min/max values are specified
+				if field.Min.Valid || field.Max.Valid {
+					constraints := []string{}
+					if field.Min.Valid {
+						constraints = append(constraints, fmt.Sprintf("CHECK (%s >= %f)", field.Name, field.Min.Float64))
+					}
+					if field.Max.Valid {
+						constraints = append(constraints, fmt.Sprintf("CHECK (%s <= %f)", field.Name, field.Max.Float64))
+					}
+					columnType += " " + strings.Join(constraints, " AND ")
+				}
+			case "string":
+				columnType = "TEXT"
+				defaultValue = "NULL"
+			case "boolean":
+				columnType = "BOOLEAN"
+				defaultValue = "NULL"
+			case "array":
+				columnType = "JSONB"
+				defaultValue = "'[]'::jsonb"
+			case "object":
+				columnType = "JSONB"
+				defaultValue = "'{}'::jsonb"
+			default:
+				return fmt.Errorf("unsupported data type: %s", field.DataType)
+			}
+
+			// Build metadata comment
+			metadata := []string{
+				fmt.Sprintf("Measurement field: %s", field.Name),
+			}
+			if field.Description.Valid {
+				metadata = append(metadata, fmt.Sprintf("Description: %s", field.Description.String))
+			}
+			if field.Unit.Valid {
+				metadata = append(metadata, fmt.Sprintf("Unit: %s", field.Unit.String))
+			}
+			metadata = append(metadata, fmt.Sprintf("Required: %v", field.Required))
+			if field.Min.Valid {
+				metadata = append(metadata, fmt.Sprintf("Min: %f", field.Min.Float64))
+			}
+			if field.Max.Valid {
+				metadata = append(metadata, fmt.Sprintf("Max: %f", field.Max.Float64))
+			}
+
+			// Add column with comment for metadata
+			addColumnQuery := fmt.Sprintf(`
+				ALTER TABLE iot_sensor_readings 
+				ADD COLUMN %s %s DEFAULT %s,
+				COMMENT ON COLUMN iot_sensor_readings.%s IS '%s'`,
+				field.Name,
+				columnType,
+				defaultValue,
+				field.Name,
+				strings.Join(metadata, ", "))
+
+			_, err = tx.ExecContext(ctx, addColumnQuery)
+			if err != nil {
+				return fmt.Errorf("failed to add column %s: %w", field.Name, err)
+			}
+
+			// Add index for numeric columns
+			if field.DataType == "number" {
+				indexQuery := fmt.Sprintf(`
+					CREATE INDEX IF NOT EXISTS idx_iot_readings_%s 
+					ON iot_sensor_readings(%s)`,
+					field.Name,
+					field.Name)
+				_, err = tx.ExecContext(ctx, indexQuery)
+				if err != nil {
+					return fmt.Errorf("failed to create index for column %s: %w", field.Name, err)
+				}
+			}
+
+			// Add NOT NULL constraint if field is required
+			if field.Required {
+				notNullQuery := fmt.Sprintf(`
+					ALTER TABLE iot_sensor_readings 
+					ALTER COLUMN %s SET NOT NULL`,
+					field.Name)
+				_, err = tx.ExecContext(ctx, notNullQuery)
+				if err != nil {
+					return fmt.Errorf("failed to add NOT NULL constraint for column %s: %w", field.Name, err)
+				}
+			}
+		}
+	}
+
+	// Commit the transaction
+	if err := tx.Commit(); err != nil {
+		return fmt.Errorf("failed to commit transaction: %w", err)
+	}
+
+	return nil
 }

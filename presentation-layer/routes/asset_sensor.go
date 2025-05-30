@@ -34,6 +34,8 @@ func SetupAssetSensorRoutes(router *gin.Engine, assetSensorController *controlle
 	{
 		// List all asset sensors (for SuperAdmin - across all tenants)
 		superAdminGroup.GET("", assetSensorController.ListAssetSensors)
+		// Get asset sensor detail by ID (with complete information)
+		superAdminGroup.GET("/:id", assetSensorController.GetAssetSensor)
 		// Create new asset sensor
 		superAdminGroup.POST("", assetSensorController.CreateAssetSensor)
 		// Update asset sensor
@@ -44,5 +46,11 @@ func SetupAssetSensorRoutes(router *gin.Engine, assetSensorController *controlle
 		superAdminGroup.DELETE("/asset/:asset_id", assetSensorController.DeleteAssetSensors)
 		// Update sensor reading
 		superAdminGroup.PUT("/:id/reading", assetSensorController.UpdateSensorReading)
+		// Get all sensors for a specific asset
+		superAdminGroup.GET("/asset/:asset_id", assetSensorController.GetAssetSensors)
+		// Get active sensors
+		superAdminGroup.GET("/active", assetSensorController.GetActiveSensors)
+		// Get sensors by status
+		superAdminGroup.GET("/status/:status", assetSensorController.GetSensorsByStatus)
 	}
 }

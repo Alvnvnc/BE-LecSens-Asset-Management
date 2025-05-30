@@ -1,0 +1,62 @@
+[
+  {
+    "asset_sensor_id": "d906316f-c0bc-44c2-846a-ce5ee6363498",
+    "sensor_type_id": "5c5b5461-e8d6-4c88-93fd-4b04019669bf",
+    "mac_address": "AA:BB:CC:DD:EE:A1",
+    "temperature": {
+      "unit": "°C",
+      "label": "Temperature",
+      "value": 25.3
+    },
+    "humidity": {
+      "unit": "%",
+      "label": "Humidity",
+      "value": 67.8
+    },
+    "pm25": {
+      "unit": "μg/m³",
+      "label": "PM2.5",
+      "value": 12.4
+    }
+  },
+  {
+    "asset_sensor_id": "d906316f-c0bc-44c2-846a-ce5ee6363498", 
+    "sensor_type_id": "5c5b5461-e8d6-4c88-93fd-4b04019669bf",
+    "mac_address": "AA:BB:CC:DD:EE:A2",
+    "temperature": {
+      "unit": "°C",
+      "label": "Temperature", 
+      "value": 26.1
+    },
+    "humidity": {
+      "unit": "%",
+      "label": "Humidity",
+      "value": 65.2
+    },
+    "pm25": {
+      "unit": "μg/m³",
+      "label": "PM2.5",
+      "value": 15.8
+    }
+  },
+  {
+    "asset_sensor_id": "d906316f-c0bc-44c2-846a-ce5ee6363498",
+    "sensor_type_id": "5c5b5461-e8d6-4c88-93fd-4b04019669bf", 
+    "mac_address": "AA:BB:CC:DD:EE:A3",
+    "temperature": {
+      "unit": "°C",
+      "label": "Temperature",
+      "value": 24.7
+    },
+    "humidity": {
+      "unit": "%", 
+      "label": "Humidity",
+      "value": 70.1
+    },
+    "pm25": {
+      "unit": "μg/m³",
+      "label": "PM2.5",
+      "value": 18.2
+    }
+  }
+]

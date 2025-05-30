@@ -1,0 +1,13 @@
+{
+  "sensor_id": "456e7890-e89b-12d3-a456-426614174001",
+  "sensor_type": "humidity",
+  "reading_value": 65.2,
+  "unit": "%",
+  "location": "Data Center B",
+  "timestamp": "2025-05-29T10:35:00Z",
+  "metadata": {
+    "calibration_status": "calibrated",
+    "battery_level": 78,
+    "sensor_model": "DHT22"
+  }
+}

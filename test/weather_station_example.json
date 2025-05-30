@@ -1,0 +1,45 @@
+{
+  "asset_sensor_id": "weather-station-01",
+  "sensor_type_id": "weather-monitoring-system",
+  "mac_address": "WS:AA:BB:CC:DD:EE",
+  "temperature": {
+    "unit": "°C",
+    "label": "Air Temperature",
+    "value": 28.5
+  },
+  "humidity": {
+    "unit": "%",
+    "label": "Relative Humidity", 
+    "value": 72.3
+  },
+  "pressure": {
+    "unit": "hPa",
+    "label": "Atmospheric Pressure",
+    "value": 1013.25
+  },
+  "wind_speed": {
+    "unit": "m/s",
+    "label": "Wind Speed",
+    "value": 3.2
+  },
+  "wind_direction": {
+    "unit": "°",
+    "label": "Wind Direction",
+    "value": 180
+  },
+  "rainfall": {
+    "unit": "mm",
+    "label": "Rainfall",
+    "value": 0.0
+  },
+  "uv_index": {
+    "unit": "UV",
+    "label": "UV Index",
+    "value": 7
+  },
+  "solar_radiation": {
+    "unit": "W/m²",
+    "label": "Solar Radiation",
+    "value": 850.2
+  }
+}

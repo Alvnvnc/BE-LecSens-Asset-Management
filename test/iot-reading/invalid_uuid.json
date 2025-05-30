@@ -1,0 +1,11 @@
+{
+  "sensor_id": "invalid-uuid-format",
+  "sensor_type": "temperature",
+  "reading_value": 25.5,
+  "unit": "°C",
+  "location": "Test Location",
+  "timestamp": "2025-05-29T12:00:00Z",
+  "metadata": {
+    "test": "invalid_uuid"
+  }
+}

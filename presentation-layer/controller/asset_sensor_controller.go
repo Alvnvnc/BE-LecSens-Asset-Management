@@ -73,8 +73,11 @@ func (c *AssetSensorController) CreateAssetSensor(ctx *gin.Context) {
 // GetAssetSensor handles GET /api/v1/asset-sensors/:id
 func (c *AssetSensorController) GetAssetSensor(ctx *gin.Context) {
 	idParam := ctx.Param("id")
+	log.Printf("DEBUG: GetAssetSensor called with ID parameter: %s", idParam)
+
 	id, err := uuid.Parse(idParam)
 	if err != nil {
+		log.Printf("DEBUG: Invalid UUID format for ID: %s, error: %v", idParam, err)
 		ctx.JSON(http.StatusBadRequest, gin.H{
 			"error":   "Bad Request",
 			"message": "Invalid sensor ID format",
@@ -82,15 +85,21 @@ func (c *AssetSensorController) GetAssetSensor(ctx *gin.Context) {
 		return
 	}
 
-	sensor, err := c.assetSensorService.GetAssetSensor(ctx, id)
+	log.Printf("DEBUG: Calling GetCompleteSensorInfo service with parsed UUID: %s", id)
+
+	// Get complete sensor information with details for single sensor endpoint
+	completeSensor, err := c.assetSensorService.GetCompleteSensorInfo(ctx, id)
 	if err != nil {
+		log.Printf("DEBUG: Error from GetCompleteSensorInfo service: %v", err)
 		if common.IsNotFoundError(err) {
+			log.Printf("DEBUG: Sensor not found, returning 404")
 			ctx.JSON(http.StatusNotFound, gin.H{
 				"error":   "Not Found",
 				"message": err.Error(),
 			})
 			return
 		}
+		log.Printf("DEBUG: Internal server error, returning 500")
 		ctx.JSON(http.StatusInternalServerError, gin.H{
 			"error":   "Internal Server Error",
 			"message": "Failed to retrieve asset sensor",
@@ -98,23 +107,34 @@ func (c *AssetSensorController) GetAssetSensor(ctx *gin.Context) {
 		return
 	}
 
-	// Get complete sensor information from repository
-	completeSensor, err := c.assetSensorService.GetCompleteSensorInfo(ctx, id)
-	if err != nil {
-		ctx.JSON(http.StatusInternalServerError, gin.H{
-			"error":   "Internal Server Error",
-			"message": "Failed to retrieve complete sensor information",
-		})
-		return
+	log.Printf("DEBUG: Successfully retrieved complete sensor info, building response")
+	log.Printf("DEBUG: Sensor ID: %s, Name: %s, SensorType.Version: %s",
+		completeSensor.AssetSensor.ID, completeSensor.AssetSensor.Name, completeSensor.SensorType.Version)
+	log.Printf("DEBUG: Number of measurement types: %d", len(completeSensor.MeasurementTypes))
+
+	// Create detailed response by merging sensor data with additional info
+	response := gin.H{
+		"id":                  completeSensor.AssetSensor.ID,
+		"tenant_id":           completeSensor.AssetSensor.TenantID,
+		"asset_id":            completeSensor.AssetSensor.AssetID,
+		"sensor_type_id":      completeSensor.AssetSensor.SensorTypeID,
+		"name":                completeSensor.AssetSensor.Name,
+		"status":              completeSensor.AssetSensor.Status,
+		"configuration":       completeSensor.AssetSensor.Configuration,
+		"last_reading_value":  completeSensor.AssetSensor.LastReadingValue,
+		"last_reading_time":   completeSensor.AssetSensor.LastReadingTime,
+		"last_reading_values": completeSensor.AssetSensor.LastReadingValues,
+		"created_at":          completeSensor.AssetSensor.CreatedAt,
+		"updated_at":          completeSensor.AssetSensor.UpdatedAt,
+		"sensor_type":         completeSensor.SensorType,
+		"measurement_types":   completeSensor.MeasurementTypes,
 	}
+
+	log.Printf("DEBUG: Response built successfully, returning JSON")
 
 	ctx.JSON(http.StatusOK, gin.H{
 		"message": "Asset sensor retrieved successfully",
-		"data": gin.H{
-			"sensor":            sensor,
-			"sensor_type":       completeSensor.SensorType,
-			"measurement_types": completeSensor.MeasurementTypes,
-		},
+		"data":    response,
 	})
 }
 
@@ -146,23 +166,10 @@ func (c *AssetSensorController) GetAssetSensors(ctx *gin.Context) {
 		return
 	}
 
-	// Get complete sensor information for each sensor
-	var completeSensors []gin.H
-	for _, sensor := range sensors {
-		completeSensor, err := c.assetSensorService.GetCompleteSensorInfo(ctx, sensor.ID)
-		if err != nil {
-			continue // Skip this sensor if we can't get complete info
-		}
-		completeSensors = append(completeSensors, gin.H{
-			"sensor":            sensor,
-			"sensor_type":       completeSensor.SensorType,
-			"measurement_types": completeSensor.MeasurementTypes,
-		})
-	}
-
+	// Return only basic sensor information for list view
 	ctx.JSON(http.StatusOK, gin.H{
 		"message": "Asset sensors retrieved successfully",
-		"data":    completeSensors,
+		"data":    sensors,
 	})
 }
 
@@ -193,24 +200,11 @@ func (c *AssetSensorController) ListAssetSensors(ctx *gin.Context) {
 		return
 	}
 
-	// Get complete sensor information for each sensor
-	var completeSensors []gin.H
-	for _, sensor := range response.Sensors {
-		completeSensor, err := c.assetSensorService.GetCompleteSensorInfo(ctx, sensor.ID)
-		if err != nil {
-			continue // Skip this sensor if we can't get complete info
-		}
-		completeSensors = append(completeSensors, gin.H{
-			"sensor":            sensor,
-			"sensor_type":       completeSensor.SensorType,
-			"measurement_types": completeSensor.MeasurementTypes,
-		})
-	}
-
+	// Return only basic sensor information for list view
 	ctx.JSON(http.StatusOK, gin.H{
 		"message": "Asset sensors listed successfully",
 		"data": gin.H{
-			"sensors":     completeSensors,
+			"sensors":     response.Sensors,
 			"page":        response.Page,
 			"limit":       response.Limit,
 			"total":       response.Total,
@@ -388,23 +382,10 @@ func (c *AssetSensorController) GetActiveSensors(ctx *gin.Context) {
 		return
 	}
 
-	// Get complete sensor information for each sensor
-	var completeSensors []gin.H
-	for _, sensor := range sensors {
-		completeSensor, err := c.assetSensorService.GetCompleteSensorInfo(ctx, sensor.ID)
-		if err != nil {
-			continue // Skip this sensor if we can't get complete info
-		}
-		completeSensors = append(completeSensors, gin.H{
-			"sensor":            sensor,
-			"sensor_type":       completeSensor.SensorType,
-			"measurement_types": completeSensor.MeasurementTypes,
-		})
-	}
-
+	// Return only basic sensor information for list view
 	ctx.JSON(http.StatusOK, gin.H{
 		"message": "Active sensors retrieved successfully",
-		"data":    completeSensors,
+		"data":    sensors,
 	})
 }
 
@@ -435,22 +416,9 @@ func (c *AssetSensorController) GetSensorsByStatus(ctx *gin.Context) {
 		return
 	}
 
-	// Get complete sensor information for each sensor
-	var completeSensors []gin.H
-	for _, sensor := range sensors {
-		completeSensor, err := c.assetSensorService.GetCompleteSensorInfo(ctx, sensor.ID)
-		if err != nil {
-			continue // Skip this sensor if we can't get complete info
-		}
-		completeSensors = append(completeSensors, gin.H{
-			"sensor":            sensor,
-			"sensor_type":       completeSensor.SensorType,
-			"measurement_types": completeSensor.MeasurementTypes,
-		})
-	}
-
+	// Return only basic sensor information for list view
 	ctx.JSON(http.StatusOK, gin.H{
 		"message": "Sensors retrieved successfully",
-		"data":    completeSensors,
+		"data":    sensors,
 	})
 }

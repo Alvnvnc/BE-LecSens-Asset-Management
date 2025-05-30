@@ -294,9 +294,26 @@ func SuperAdminPassthroughMiddleware() gin.HandlerFunc {
 		}
 
 		// Store user information in context
-		if userID, ok := claims["sub"].(string); ok {
+		if userID, ok := claims["user_id"].(string); ok {
 			c.Set("user_id", userID)
+			log.Printf("SuperAdmin Passthrough Middleware: Set user_id: %s", userID)
+		} else if sub, ok := claims["sub"].(string); ok {
+			c.Set("user_id", sub)
+			log.Printf("SuperAdmin Passthrough Middleware: Set user_id from sub: %s", sub)
 		}
+
+		// For SuperAdmin, we need to extract tenant_id from the request context if available
+		// Since SuperAdmin can operate across tenants, we'll try to get it from the token
+		// or use a default tenant context
+		if tenantID, ok := claims["tenant_id"].(string); ok {
+			c.Set("tenant_id", tenantID)
+			log.Printf("SuperAdmin Passthrough Middleware: Set tenant_id: %s", tenantID)
+		} else {
+			// For SuperAdmin operations, we might not have a specific tenant in the token
+			// This is expected behavior for global operations
+			log.Printf("SuperAdmin Passthrough Middleware: No tenant_id in token (expected for SuperAdmin)")
+		}
+
 		c.Set("user_role", role)
 		c.Set("is_superadmin", true)
 

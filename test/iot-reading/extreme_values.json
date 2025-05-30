@@ -1,0 +1,54 @@
+[
+  {
+    "sensor_id": "123e4567-e89b-12d3-a456-426614174000",
+    "sensor_type": "temperature",
+    "reading_value": -10.5,
+    "unit": "°C",
+    "location": "Freezer Room",
+    "timestamp": "2025-05-29T08:00:00Z",
+    "metadata": {
+      "calibration_status": "calibrated",
+      "battery_level": 25,
+      "environment": "extreme_cold"
+    }
+  },
+  {
+    "sensor_id": "456e7890-e89b-12d3-a456-426614174001",
+    "sensor_type": "temperature",
+    "reading_value": 85.3,
+    "unit": "°C",
+    "location": "Boiler Room",
+    "timestamp": "2025-05-29T08:15:00Z",
+    "metadata": {
+      "calibration_status": "calibrated",
+      "battery_level": 95,
+      "environment": "extreme_heat"
+    }
+  },
+  {
+    "sensor_id": "789e0123-e89b-12d3-a456-426614174002",
+    "sensor_type": "humidity",
+    "reading_value": 5.2,
+    "unit": "%",
+    "location": "Desert Facility",
+    "timestamp": "2025-05-29T08:30:00Z",
+    "metadata": {
+      "calibration_status": "calibrated",
+      "battery_level": 60,
+      "environment": "extreme_dry"
+    }
+  },
+  {
+    "sensor_id": "abc123de-e89b-12d3-a456-426614174003",
+    "sensor_type": "humidity",
+    "reading_value": 95.8,
+    "unit": "%",
+    "location": "Greenhouse",
+    "timestamp": "2025-05-29T08:45:00Z",
+    "metadata": {
+      "calibration_status": "calibrated",
+      "battery_level": 82,
+      "environment": "extreme_humid"
+    }
+  }
+]

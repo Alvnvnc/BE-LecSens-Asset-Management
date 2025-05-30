@@ -1,0 +1,13 @@
+{
+  "sensor_id": "abc123de-e89b-12d3-a456-426614174003",
+  "sensor_type": "light",
+  "reading_value": 450.75,
+  "unit": "lux",
+  "location": "Office Room 3",
+  "timestamp": "2025-05-29T11:00:00Z",
+  "metadata": {
+    "calibration_status": "calibrated",
+    "battery_level": 90,
+    "light_spectrum": "visible"
+  }
+}
