@@ -3,6 +3,7 @@ package routes
 import (
 	"be-lecsens/asset_management/domain-layer/middleware"
 	"be-lecsens/asset_management/presentation-layer/controller"
+	"database/sql"
 
 	"github.com/gin-gonic/gin"
 )
@@ -19,7 +20,10 @@ func SetupRoutes(
 	sensorMeasurementFieldController *controller.SensorMeasurementFieldController,
 	sensorMeasurementTypeController *controller.SensorMeasurementTypeController,
 	iotSensorReadingController *controller.IoTSensorReadingController,
+	sensorThresholdController *controller.SensorThresholdController,
+	assetAlertController *controller.AssetAlertController,
 	jwtConfig middleware.JWTConfig,
+	db *sql.DB,
 ) {
 
 	// Public routes (no tenant required)
@@ -34,7 +38,7 @@ func SetupRoutes(
 	SetupAssetTypeRoutes(router, assetTypeController)
 
 	// Setup Location routes
-	SetupLocationRoutes(router, locationController)
+	LocationRoutes(router, locationController)
 
 	// Setup Asset routes
 	SetupAssetRoutes(router, assetController)
@@ -56,4 +60,13 @@ func SetupRoutes(
 
 	// Setup IoT Sensor Reading routes
 	SetupIoTSensorReadingRoutes(router, iotSensorReadingController)
+
+	// Setup Sensor Threshold routes
+	SetupSensorThresholdRoutes(router, sensorThresholdController)
+
+	// Setup Asset Alert routes
+	SetupAssetAlertRoutes(router, assetAlertController)
+
+	// Setup Asset with Sensors routes
+	SetupAssetWithSensorsRoutes(router, db)
 }

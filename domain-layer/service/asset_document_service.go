@@ -275,8 +275,9 @@ func (s *AssetDocumentService) UpdateAssetDocument(ctx context.Context, id uuid.
 	// Handle file upload if new file is provided
 	if file != nil {
 		// Validate file
-		if err := s.validateFile(file); err != nil {
-			return nil, common.NewValidationError(err.Error(), err)
+		validateErr := s.validateFile(file)
+		if validateErr != nil {
+			return nil, common.NewValidationError(validateErr.Error(), validateErr)
 		}
 
 		// Default asset ID if not available
@@ -286,13 +287,15 @@ func (s *AssetDocumentService) UpdateAssetDocument(ctx context.Context, id uuid.
 		}
 
 		// Upload new file to Cloudinary
-		fileReader, err := file.Open()
+		var fileReader multipart.File
+		fileReader, err = file.Open()
 		if err != nil {
 			return nil, fmt.Errorf("failed to open file: %w", err)
 		}
 		defer fileReader.Close()
 
-		uploadResult, err := s.cloudinaryService.UploadAssetDocument(ctx, fileReader, file, assetID, updatedDoc.DocumentType)
+		var uploadResult *cloudinary.UploadResult
+		uploadResult, err = s.cloudinaryService.UploadAssetDocument(ctx, fileReader, file, assetID, updatedDoc.DocumentType)
 		if err != nil {
 			return nil, fmt.Errorf("failed to upload file to Cloudinary: %w", err)
 		}

@@ -3,6 +3,7 @@ package service
 import (
 	"be-lecsens/asset_management/data-layer/entity"
 	"be-lecsens/asset_management/data-layer/repository"
+	"be-lecsens/asset_management/helpers/dto"
 	"context"
 	"fmt"
 	"log"
@@ -52,19 +53,120 @@ func (s *LocationService) ListLocations(ctx context.Context, page, pageSize int)
 	return locations, nil
 }
 
-// UpdateLocation updates an existing location
-func (s *LocationService) UpdateLocation(ctx context.Context, location *entity.Location) error {
-	log.Printf("Location Service: Updating location - ID: %s", location.ID)
-
-	// Set update time
-	location.UpdatedAt = time.Now()
-
-	err := s.locationRepo.Update(ctx, location)
-	if err != nil {
-		log.Printf("Location Service: Error updating location: %v", err)
-		return fmt.Errorf("failed to update location: %w", err)
+func (s *LocationService) CreateLocation(ctx context.Context, req dto.CreateLocationRequest) (*dto.LocationResponse, error) {
+	// Create location entity
+	location := &entity.Location{
+		RegionCode:     req.RegionCode,
+		Name:           req.Name,
+		HierarchyLevel: req.HierarchyLevel,
+		IsActive:       true, // Default to active
 	}
 
-	log.Printf("Location Service: Successfully updated location: %s", location.ID)
+	// Handle optional fields
+	if req.Description != nil {
+		location.Description = *req.Description
+	}
+	if req.Address != nil {
+		location.Address = *req.Address
+	}
+	if req.Longitude != nil {
+		location.Longitude = *req.Longitude
+	}
+	if req.Latitude != nil {
+		location.Latitude = *req.Latitude
+	}
+
+	// Create in database
+	err := s.locationRepo.Create(ctx, location)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create location: %w", err)
+	}
+
+	// Convert to response
+	return &dto.LocationResponse{
+		ID:             location.ID,
+		RegionCode:     location.RegionCode,
+		Name:           location.Name,
+		Description:    &location.Description,
+		Address:        &location.Address,
+		Longitude:      &location.Longitude,
+		Latitude:       &location.Latitude,
+		HierarchyLevel: location.HierarchyLevel,
+		IsActive:       location.IsActive,
+		CreatedAt:      location.CreatedAt,
+		UpdatedAt:      location.UpdatedAt,
+	}, nil
+}
+
+func (s *LocationService) UpdateLocation(ctx context.Context, id uuid.UUID, req dto.UpdateLocationRequest) (*dto.LocationResponse, error) {
+	// Get existing location
+	location, err := s.locationRepo.GetByID(ctx, id)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get location: %w", err)
+	}
+
+	// Update fields
+	if req.RegionCode != nil {
+		location.RegionCode = *req.RegionCode
+	}
+	if req.Name != nil {
+		location.Name = *req.Name
+	}
+	if req.Description != nil {
+		location.Description = *req.Description
+	}
+	if req.Address != nil {
+		location.Address = *req.Address
+	}
+	if req.Longitude != nil {
+		location.Longitude = *req.Longitude
+	}
+	if req.Latitude != nil {
+		location.Latitude = *req.Latitude
+	}
+	if req.HierarchyLevel != nil {
+		location.HierarchyLevel = *req.HierarchyLevel
+	}
+	if req.IsActive != nil {
+		location.IsActive = *req.IsActive
+	}
+
+	location.UpdatedAt = time.Now()
+
+	// Update in database
+	err = s.locationRepo.Update(ctx, location)
+	if err != nil {
+		return nil, fmt.Errorf("failed to update location: %w", err)
+	}
+
+	// Convert to response
+	return &dto.LocationResponse{
+		ID:             location.ID,
+		RegionCode:     location.RegionCode,
+		Name:           location.Name,
+		Description:    &location.Description,
+		Address:        &location.Address,
+		Longitude:      &location.Longitude,
+		Latitude:       &location.Latitude,
+		HierarchyLevel: location.HierarchyLevel,
+		IsActive:       location.IsActive,
+		CreatedAt:      location.CreatedAt,
+		UpdatedAt:      location.UpdatedAt,
+	}, nil
+}
+
+func (s *LocationService) DeleteLocation(ctx context.Context, id uuid.UUID) error {
+	// Check if location exists
+	_, err := s.locationRepo.GetByID(ctx, id)
+	if err != nil {
+		return fmt.Errorf("failed to get location: %w", err)
+	}
+
+	// Delete location
+	err = s.locationRepo.Delete(ctx, id)
+	if err != nil {
+		return fmt.Errorf("failed to delete location: %w", err)
+	}
+
 	return nil
 }

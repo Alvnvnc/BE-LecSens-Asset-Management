@@ -148,5 +148,19 @@ func runMigrations(cfg *config.Config) error {
 	}
 	log.Println("IoT sensor readings table created successfully")
 
+	// Run sensor threshold migration
+	log.Println("Creating sensor thresholds table...")
+	if err := CreateSensorThresholdTable(db); err != nil {
+		return fmt.Errorf("sensor threshold migration failed: %v", err)
+	}
+	log.Println("Sensor thresholds table created successfully")
+
+	// Run asset alert migration
+	log.Println("Creating asset alerts table...")
+	if err := CreateAssetAlertTable(db); err != nil {
+		return fmt.Errorf("asset alert migration failed: %v", err)
+	}
+	log.Println("Asset alerts table created successfully")
+
 	return nil
 }

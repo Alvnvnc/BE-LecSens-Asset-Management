@@ -121,6 +121,32 @@ func NewNotFoundError(resource, id string) *NotFoundError {
 	}
 }
 
+// BadRequestError represents a bad request error
+type BadRequestError struct {
+	Message string
+	Err     error
+}
+
+// Error implements the error interface
+func (e *BadRequestError) Error() string {
+	if e.Err != nil {
+		return fmt.Sprintf("bad request: %s - %v", e.Message, e.Err)
+	}
+	return fmt.Sprintf("bad request: %s", e.Message)
+}
+
+// Unwrap returns the underlying error
+func (e *BadRequestError) Unwrap() error {
+	return e.Err
+}
+
+// NewBadRequestError creates a new bad request error
+func NewBadRequestError(message string) *BadRequestError {
+	return &BadRequestError{
+		Message: message,
+	}
+}
+
 // IsValidationError checks if an error is a validation error
 func IsValidationError(err error) bool {
 	return errors.Is(err, ErrValidation)

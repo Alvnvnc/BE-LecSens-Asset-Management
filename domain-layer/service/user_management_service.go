@@ -133,7 +133,8 @@ func (s *UserManagementService) ValidateToken(ctx context.Context, tokenString s
 		} `json:"userInfo"`
 	}
 
-	if err := json.NewDecoder(resp.Body).Decode(&response); err != nil {
+	decodeErr := json.NewDecoder(resp.Body).Decode(&response)
+	if decodeErr != nil {
 		return nil, fmt.Errorf("failed to decode response: %w", err)
 	}
 

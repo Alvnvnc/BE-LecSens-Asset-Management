@@ -1,0 +1,85 @@
+{
+  "name": "Smart Warehouse Monitoring System",
+  "asset_type_id": "550e8400-e29b-41d4-a716-446655440001",
+  "location_id": "550e8400-e29b-41d4-a716-446655440002",
+  "status": "active",
+  "properties": {
+    "description": "Comprehensive monitoring system for warehouse environment",
+    "installation_date": "2024-01-15",
+    "maintenance_schedule": "monthly",
+    "warranty_expiry": "2026-01-15",
+    "vendor": "TechSolutions Inc",
+    "model": "WMS-2024-Pro"
+  },
+  "sensor_types": [
+    {
+      "sensor_type_id": "550e8400-e29b-41d4-a716-446655440003",
+      "name": "Primary Temperature Sensor",
+      "status": "active",
+      "configuration": {
+        "sampling_rate_seconds": 60,
+        "unit": "celsius",
+        "precision_decimal_places": 2,
+        "min_threshold": -10,
+        "max_threshold": 40,
+        "calibration_date": "2024-01-10",
+        "sensor_location": "center"
+      }
+    },
+    {
+      "sensor_type_id": "550e8400-e29b-41d4-a716-446655440004",
+      "name": "Humidity Monitor",
+      "status": "active",
+      "configuration": {
+        "sampling_rate_seconds": 300,
+        "unit": "percentage",
+        "range_min": 0,
+        "range_max": 100,
+        "precision_decimal_places": 1,
+        "calibration_date": "2024-01-10",
+        "sensor_location": "wall_mounted"
+      }
+    },
+    {
+      "sensor_type_id": "550e8400-e29b-41d4-a716-446655440005",
+      "name": "Air Pressure Sensor",
+      "status": "active",
+      "configuration": {
+        "sampling_rate_seconds": 600,
+        "unit": "pascal",
+        "range_min": 80000,
+        "range_max": 120000,
+        "precision_decimal_places": 0,
+        "calibration_date": "2024-01-10",
+        "sensor_location": "ceiling"
+      }
+    },
+    {
+      "sensor_type_id": "550e8400-e29b-41d4-a716-446655440006",
+      "name": "Motion Detection Sensor",
+      "status": "active",
+      "configuration": {
+        "sampling_rate_seconds": 1,
+        "detection_range_meters": 10,
+        "sensitivity_level": "medium",
+        "trigger_threshold": 0.5,
+        "calibration_date": "2024-01-10",
+        "sensor_location": "entrance"
+      }
+    },
+    {
+      "sensor_type_id": "550e8400-e29b-41d4-a716-446655440007",
+      "name": "Light Level Sensor",
+      "status": "active",
+      "configuration": {
+        "sampling_rate_seconds": 120,
+        "unit": "lux",
+        "range_min": 0,
+        "range_max": 100000,
+        "precision_decimal_places": 0,
+        "calibration_date": "2024-01-10",
+        "sensor_location": "multiple_points"
+      }
+    }
+  ]
+}

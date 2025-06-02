@@ -61,7 +61,6 @@ func main() {
 	if err != nil {
 		log.Fatalf("Failed to initialize Cloudinary service: %v", err)
 	}
-
 	// Initialize repositories
 	assetRepo := repository.NewAssetRepository(db)
 	assetTypeRepo := repository.NewAssetTypeRepository(db)
@@ -72,8 +71,8 @@ func main() {
 	sensorMeasurementFieldRepo := repository.NewSensorMeasurementFieldRepository(db)
 	sensorMeasurementTypeRepo := repository.NewSensorMeasurementTypeRepository(db)
 	iotSensorReadingRepo := repository.NewIoTSensorReadingRepository(db)
-
-	// Initialize services
+	sensorThresholdRepo := repository.NewSensorThresholdRepository(db)
+	assetAlertRepo := repository.NewAssetAlertRepository(db) // Initialize services
 	log.Println("Initializing services")
 	assetService := service.NewAssetService(assetRepo, assetTypeRepo, locationRepo)
 	assetTypeService := service.NewAssetTypeService(assetTypeRepo)
@@ -83,7 +82,9 @@ func main() {
 	sensorTypeService := service.NewSensorTypeService(sensorTypeRepo)
 	sensorMeasurementFieldService := service.NewSensorMeasurementFieldService(sensorMeasurementFieldRepo)
 	sensorMeasurementTypeService := service.NewSensorMeasurementTypeService(sensorMeasurementTypeRepo)
-	iotSensorReadingService := service.NewIoTSensorReadingService(iotSensorReadingRepo, assetSensorRepo, sensorTypeRepo, assetRepo, locationRepo)
+	assetAlertService := service.NewAssetAlertService(assetAlertRepo, assetRepo, assetSensorRepo, sensorThresholdRepo, sensorTypeRepo, locationRepo)
+	sensorThresholdService := service.NewSensorThresholdService(sensorThresholdRepo, assetSensorRepo, sensorTypeRepo, assetRepo, assetAlertService)
+	iotSensorReadingService := service.NewIoTSensorReadingService(iotSensorReadingRepo, assetSensorRepo, sensorTypeRepo, assetRepo, locationRepo, &sensorThresholdService, &assetAlertService)
 
 	// Initialize controllers
 	assetController := controller.NewAssetController(assetService, cfg)
@@ -95,6 +96,8 @@ func main() {
 	sensorMeasurementFieldController := controller.NewSensorMeasurementFieldController(sensorMeasurementFieldService)
 	sensorMeasurementTypeController := controller.NewSensorMeasurementTypeController(sensorMeasurementTypeService, cfg)
 	iotSensorReadingController := controller.NewIoTSensorReadingController(iotSensorReadingService)
+	sensorThresholdController := controller.NewSensorThresholdController(&sensorThresholdService)
+	assetAlertController := controller.NewAssetAlertController(&assetAlertService)
 
 	// Initialize JWT config
 	jwtConfig := middleware.JWTConfig{
@@ -119,7 +122,10 @@ func main() {
 		sensorMeasurementFieldController,
 		sensorMeasurementTypeController,
 		iotSensorReadingController,
+		sensorThresholdController,
+		assetAlertController,
 		jwtConfig,
+		db,
 	)
 
 	// Start the server

@@ -1,8 +1,9 @@
 package controller
 
 import (
-	"be-lecsens/asset_management/data-layer/entity"
 	"be-lecsens/asset_management/domain-layer/service"
+	"be-lecsens/asset_management/helpers/dto"
+	"log"
 	"net/http"
 	"strconv"
 
@@ -55,33 +56,126 @@ func (c *LocationController) ListLocations(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, locations)
 }
 
-// UpdateLocation handles PUT /api/v1/locations/:id
-// This endpoint requires SuperAdmin access
-func (c *LocationController) UpdateLocation(ctx *gin.Context) {
-	// Get location ID from URL
-	id := ctx.Param("id")
-	locationID, err := uuid.Parse(id)
+func (c *LocationController) CreateLocation(ctx *gin.Context) {
+	log.Printf("Location Controller: CreateLocation called")
+
+	// Parse request body
+	var req dto.CreateLocationRequest
+	if err := ctx.ShouldBindJSON(&req); err != nil {
+		log.Printf("Location Controller: Invalid request body: %v", err)
+		ctx.JSON(http.StatusBadRequest, gin.H{
+			"success": false,
+			"message": "Invalid request format",
+			"error":   err.Error(),
+		})
+		return
+	}
+
+	log.Printf("Location Controller: Create request: %+v", req)
+
+	// Create location
+	response, err := c.locationService.CreateLocation(ctx, req)
 	if err != nil {
-		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Invalid location ID format"})
+		log.Printf("Location Controller: Error creating location: %v", err)
+		ctx.JSON(http.StatusInternalServerError, gin.H{
+			"success": false,
+			"message": "Failed to create location",
+			"error":   err.Error(),
+		})
+		return
+	}
+
+	log.Printf("Location Controller: Successfully created location: %s", response.ID)
+	ctx.JSON(http.StatusCreated, gin.H{
+		"success": true,
+		"message": "Location created successfully",
+		"data":    response,
+	})
+}
+
+func (c *LocationController) UpdateLocation(ctx *gin.Context) {
+	log.Printf("Location Controller: UpdateLocation called")
+
+	// Get location ID from URL parameter
+	idParam := ctx.Param("id")
+	locationID, err := uuid.Parse(idParam)
+	if err != nil {
+		log.Printf("Location Controller: Invalid location ID: %s", idParam)
+		ctx.JSON(http.StatusBadRequest, gin.H{
+			"success": false,
+			"message": "Invalid location ID format",
+			"error":   err.Error(),
+		})
 		return
 	}
 
 	// Parse request body
-	var location entity.Location
-	if err := ctx.ShouldBindJSON(&location); err != nil {
-		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+	var req dto.UpdateLocationRequest
+	if err := ctx.ShouldBindJSON(&req); err != nil {
+		log.Printf("Location Controller: Invalid request body: %v", err)
+		ctx.JSON(http.StatusBadRequest, gin.H{
+			"success": false,
+			"message": "Invalid request format",
+			"error":   err.Error(),
+		})
 		return
 	}
 
-	// Ensure the ID in the URL matches the ID in the request body
-	location.ID = locationID
+	log.Printf("Location Controller: Update request for location %s: %+v", locationID, req)
 
-	// Update the location
-	err = c.locationService.UpdateLocation(ctx, &location)
+	// Update location
+	response, err := c.locationService.UpdateLocation(ctx, locationID, req)
 	if err != nil {
-		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		log.Printf("Location Controller: Error updating location: %v", err)
+		ctx.JSON(http.StatusInternalServerError, gin.H{
+			"success": false,
+			"message": "Failed to update location",
+			"error":   err.Error(),
+		})
 		return
 	}
 
-	ctx.JSON(http.StatusOK, location)
+	log.Printf("Location Controller: Successfully updated location: %s", locationID)
+	ctx.JSON(http.StatusOK, gin.H{
+		"success": true,
+		"message": "Location updated successfully",
+		"data":    response,
+	})
+}
+
+func (c *LocationController) DeleteLocation(ctx *gin.Context) {
+	log.Printf("Location Controller: DeleteLocation called")
+
+	// Get location ID from URL parameter
+	idParam := ctx.Param("id")
+	locationID, err := uuid.Parse(idParam)
+	if err != nil {
+		log.Printf("Location Controller: Invalid location ID: %s", idParam)
+		ctx.JSON(http.StatusBadRequest, gin.H{
+			"success": false,
+			"message": "Invalid location ID format",
+			"error":   err.Error(),
+		})
+		return
+	}
+
+	log.Printf("Location Controller: Delete request for location %s", locationID)
+
+	// Delete location
+	err = c.locationService.DeleteLocation(ctx, locationID)
+	if err != nil {
+		log.Printf("Location Controller: Error deleting location: %v", err)
+		ctx.JSON(http.StatusInternalServerError, gin.H{
+			"success": false,
+			"message": "Failed to delete location",
+			"error":   err.Error(),
+		})
+		return
+	}
+
+	log.Printf("Location Controller: Successfully deleted location: %s", locationID)
+	ctx.JSON(http.StatusOK, gin.H{
+		"success": true,
+		"message": "Location deleted successfully",
+	})
 }

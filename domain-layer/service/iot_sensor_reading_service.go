@@ -19,11 +19,13 @@ import (
 
 // IoTSensorReadingService handles business logic for IoT sensor readings
 type IoTSensorReadingService struct {
-	iotSensorReadingRepo repository.IoTSensorReadingRepository
-	assetSensorRepo      repository.AssetSensorRepository
-	sensorTypeRepo       *repository.SensorTypeRepository
-	assetRepo            repository.AssetRepository
-	locationRepo         *repository.LocationRepository
+	iotSensorReadingRepo   repository.IoTSensorReadingRepository
+	assetSensorRepo        repository.AssetSensorRepository
+	sensorTypeRepo         *repository.SensorTypeRepository
+	assetRepo              repository.AssetRepository
+	locationRepo           *repository.LocationRepository
+	sensorThresholdService *SensorThresholdService
+	assetAlertService      *AssetAlertService
 }
 
 // NewIoTSensorReadingService creates a new instance of IoTSensorReadingService
@@ -33,13 +35,17 @@ func NewIoTSensorReadingService(
 	sensorTypeRepo *repository.SensorTypeRepository,
 	assetRepo repository.AssetRepository,
 	locationRepo *repository.LocationRepository,
+	sensorThresholdService *SensorThresholdService,
+	assetAlertService *AssetAlertService,
 ) *IoTSensorReadingService {
 	return &IoTSensorReadingService{
-		iotSensorReadingRepo: iotSensorReadingRepo,
-		assetSensorRepo:      assetSensorRepo,
-		sensorTypeRepo:       sensorTypeRepo,
-		assetRepo:            assetRepo,
-		locationRepo:         locationRepo,
+		iotSensorReadingRepo:   iotSensorReadingRepo,
+		assetSensorRepo:        assetSensorRepo,
+		sensorTypeRepo:         sensorTypeRepo,
+		assetRepo:              assetRepo,
+		locationRepo:           locationRepo,
+		sensorThresholdService: sensorThresholdService,
+		assetAlertService:      assetAlertService,
 	}
 }
 
@@ -99,7 +105,6 @@ func (s *IoTSensorReadingService) CreateIoTSensorReading(ctx context.Context, re
 	if req.ReadingTime != nil {
 		reading.ReadingTime = *req.ReadingTime
 	}
-
 	// Save to database
 	if err := s.iotSensorReadingRepo.Create(ctx, reading); err != nil {
 		log.Printf("Error creating IoT sensor reading: %v", err)
@@ -107,6 +112,11 @@ func (s *IoTSensorReadingService) CreateIoTSensorReading(ctx context.Context, re
 	}
 
 	log.Printf("Successfully created IoT sensor reading with ID: %s", reading.ID)
+
+	// Check thresholds and generate alerts if services are available
+	if s.sensorThresholdService != nil && s.assetAlertService != nil {
+		s.checkThresholdsAndGenerateAlerts(ctx, reading)
+	}
 
 	// Convert to response DTO
 	return s.toResponseDTO(reading), nil
@@ -1401,4 +1411,54 @@ func (s *IoTSensorReadingService) ParseTextToFlexibleReading(ctx context.Context
 		IoTSensorReadingResponse: reading,
 		MeasurementData:          measurementData,
 	}, nil
+}
+
+// checkThresholdsAndGenerateAlerts checks sensor reading values against configured thresholds
+// and generates alerts when values are outside threshold ranges
+func (s *IoTSensorReadingService) checkThresholdsAndGenerateAlerts(ctx context.Context, reading *entity.IoTSensorReadingFlexible) {
+	if reading == nil {
+		return
+	}
+
+	// Only check numeric values for thresholds
+	if reading.NumericValue == nil {
+		// No numeric value to check against thresholds
+		return
+	}
+
+	// Get tenant ID, use empty UUID if not available
+	tenantID := uuid.UUID{}
+	if reading.TenantID != nil {
+		tenantID = *reading.TenantID
+	}
+
+	// Use measurement type as the field name for threshold checking
+	measurementField := reading.MeasurementType
+	if measurementField == "" {
+		log.Printf("Skipping threshold check for reading %s: no measurement type specified", reading.ID)
+		return
+	}
+
+	numericValue := *reading.NumericValue
+	// Check thresholds for this measurement
+	result, err := (*s.sensorThresholdService).CheckThresholds(ctx, tenantID, reading.AssetSensorID, measurementField, numericValue)
+	if err != nil {
+		log.Printf("Failed to check thresholds for reading %s, field %s: %v", reading.ID, measurementField, err)
+		return
+	}
+
+	// Log if any alerts were created
+	if result.AlertsCreated > 0 {
+		log.Printf("Generated %d alert(s) for sensor reading ID %s, field %s, value %f", 
+			result.AlertsCreated, reading.ID, measurementField, numericValue)
+	}
+
+	// Log threshold violations (even if no alerts were created)
+	for _, thresholdResult := range result.Results {
+		if thresholdResult.IsBreached {
+			log.Printf("Threshold violation detected: %s - %s (value: %f, range: [%f, %f])",
+				thresholdResult.ThresholdName, thresholdResult.Message, 
+				thresholdResult.CurrentValue, thresholdResult.MinValue, thresholdResult.MaxValue)
+		}
+	}
 }

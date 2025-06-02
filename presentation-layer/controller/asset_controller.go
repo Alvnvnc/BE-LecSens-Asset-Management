@@ -132,8 +132,8 @@ func (c *AssetController) UpdateAsset(ctx *gin.Context) {
 	}
 
 	var updateReq UpdateAssetRequest
-	if err := ctx.ShouldBindJSON(&updateReq); err != nil {
-		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+	if bindErr := ctx.ShouldBindJSON(&updateReq); bindErr != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": bindErr.Error()})
 		return
 	}
 

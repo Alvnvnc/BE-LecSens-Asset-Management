@@ -7,30 +7,33 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-// SetupLocationRoutes configures all location related routes
-func SetupLocationRoutes(
-	router *gin.Engine,
-	locationController *controller.LocationController,
-) {
-	// Public routes for reading locations
-	api := router.Group("/api/v1")
+func LocationRoutes(router *gin.Engine, locationController *controller.LocationController) {
+	// Group for location routes
+	locationGroup := router.Group("/api/v1/locations")
 	{
-		locations := api.Group("/locations")
+		// Public routes (requires tenant validation from JWT) - READ ONLY for regular users
+		locationGroup.Use(middleware.TenantMiddleware())
 		{
-			// Read operations - public access
-			locations.GET("", locationController.ListLocations)
-			locations.GET("/:id", locationController.GetLocation)
+			// Get location by ID
+			locationGroup.GET("/:id", locationController.GetLocation)
+			// List all locations (paginated)
+			locationGroup.GET("", locationController.ListLocations)
 		}
 	}
 
-	// Protected routes for updating locations (SuperAdmin only)
-	superAdminApi := router.Group("/api/v1/superadmin")
-	superAdminApi.Use(middleware.SuperAdminPassthroughMiddleware())
+	// SuperAdmin only routes - use SuperAdmin middleware for role validation
+	superAdminGroup := router.Group("/api/v1/superadmin/locations")
+	superAdminGroup.Use(middleware.SuperAdminPassthroughMiddleware())
 	{
-		locations := superAdminApi.Group("/locations")
-		{
-			// Write operations - SuperAdmin only
-			locations.PUT("/:id", locationController.UpdateLocation)
-		}
+		// List all locations (for SuperAdmin - across all tenants)
+		superAdminGroup.GET("", locationController.ListLocations)
+		// Get location by ID (for SuperAdmin)
+		superAdminGroup.GET("/:id", locationController.GetLocation)
+		// Create new location
+		superAdminGroup.POST("", locationController.CreateLocation)
+		// Update location
+		superAdminGroup.PUT("/:id", locationController.UpdateLocation)
+		// Delete location
+		superAdminGroup.DELETE("/:id", locationController.DeleteLocation)
 	}
 }
