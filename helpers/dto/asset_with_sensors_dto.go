@@ -20,7 +20,6 @@ type CreateAssetWithSensorsRequest struct {
 // CreateAssetSensorFromType represents sensor configuration for asset creation
 type CreateAssetSensorFromType struct {
 	SensorTypeID  uuid.UUID       `json:"sensor_type_id" binding:"required" validate:"required"`
-	Name          string          `json:"name" binding:"required" validate:"required"`
 	Status        string          `json:"status,omitempty"`
 	Configuration json.RawMessage `json:"configuration,omitempty"`
 }

@@ -387,7 +387,7 @@ func (c *AssetAlertController) GetAlertStatistics(ctx *gin.Context) {
 
 // GetAssetAlerts handles GET /api/v1/superadmin/assets/:asset_id/alerts
 func (c *AssetAlertController) GetAssetAlerts(ctx *gin.Context) {
-	assetIDStr := ctx.Param("asset_id")
+	assetIDStr := ctx.Param("id")
 	assetID, err := uuid.Parse(assetIDStr)
 	if err != nil {
 		log.Printf("Invalid asset ID format: %s", assetIDStr)

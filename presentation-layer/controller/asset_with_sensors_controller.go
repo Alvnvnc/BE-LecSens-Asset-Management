@@ -91,15 +91,6 @@ func (c *AssetWithSensorsController) CreateAssetWithSensors(ctx *gin.Context) {
 			})
 			return
 		}
-
-		if sensorReq.Name == "" {
-			ctx.JSON(http.StatusBadRequest, gin.H{
-				"success": false,
-				"message": "Sensor name is required for all sensors",
-				"error":   "sensor_types[" + strconv.Itoa(i) + "].name is required",
-			})
-			return
-		}
 	}
 
 	// Call service to create asset with sensors

@@ -27,7 +27,7 @@ func SetupAssetAlertRoutes(router *gin.Engine, assetAlertController *controller.
 	assetsGroup := router.Group("/api/v1/assets")
 	assetsGroup.Use(middleware.TenantMiddleware())
 	{
-		assetsGroup.GET("/:asset_id/alerts", assetAlertController.GetAssetAlerts)
+		assetsGroup.GET("/:id/alerts", assetAlertController.GetAssetAlerts)
 	}
 
 	// Sensor-specific alert endpoints (public)

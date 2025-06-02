@@ -115,7 +115,7 @@ func (s *AssetWithSensorsService) CreateAssetWithSensors(ctx context.Context, re
 			TenantID:      asset.TenantID, // Inherit tenant_id from asset
 			AssetID:       asset.ID,
 			SensorTypeID:  sensorReq.SensorTypeID,
-			Name:          sensorReq.Name,
+			Name:          asset.Name, // Use asset name as sensor name
 			Status:        sensorStatus,
 			Configuration: sensorReq.Configuration,
 			CreatedAt:     now,
@@ -127,7 +127,7 @@ func (s *AssetWithSensorsService) CreateAssetWithSensors(ctx context.Context, re
 		err = s.assetSensorRepo.Create(ctx, assetSensor)
 		if err != nil {
 			log.Printf("Failed to create asset sensor %d: %v", i, err)
-			sensorErrors = append(sensorErrors, fmt.Sprintf("Failed to create sensor '%s': %v", sensorReq.Name, err))
+			sensorErrors = append(sensorErrors, fmt.Sprintf("Failed to create sensor '%s': %v", asset.Name, err))
 			continue
 		}
 
