@@ -1,6 +1,8 @@
 package dto
 
-import "github.com/google/uuid"
+import (
+	"github.com/google/uuid"
+)
 
 // AssignAssetToTenantRequest represents the request to assign an asset to a tenant
 type AssignAssetToTenantRequest struct {

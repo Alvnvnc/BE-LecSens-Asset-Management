@@ -3,6 +3,7 @@ package routes
 import (
 	"be-lecsens/asset_management/domain-layer/middleware"
 	"be-lecsens/asset_management/presentation-layer/controller"
+	"database/sql"
 
 	"github.com/gin-gonic/gin"
 )
@@ -10,6 +11,7 @@ import (
 // SetupRoutes configures all the routes for the application
 func SetupRoutes(
 	router *gin.Engine,
+	db *sql.DB,
 	assetController *controller.AssetController,
 	assetTypeController *controller.AssetTypeController,
 	locationController *controller.LocationController,
@@ -46,6 +48,9 @@ func SetupRoutes(
 
 	// Setup Asset Sensor routes
 	SetupAssetSensorRoutes(router, assetSensorController)
+
+	// Setup Asset with Sensors routes
+	SetupAssetWithSensorsRoutes(router, db)
 
 	// Setup Sensor Type routes
 	SetupSensorTypeRoutes(router, sensorTypeController)

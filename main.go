@@ -116,6 +116,7 @@ func main() {
 	// Configure routes
 	routes.SetupRoutes(
 		router,
+		db,
 		assetController,
 		assetTypeController,
 		locationController,
