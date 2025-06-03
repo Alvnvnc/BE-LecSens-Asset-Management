@@ -8,54 +8,53 @@ import (
 )
 
 func SetupSensorThresholdRoutes(router *gin.Engine, sensorThresholdController *controller.SensorThresholdController) {
-	// Group for sensor threshold routes
-	sensorThresholdGroup := router.Group("/api/v1/sensor-thresholds")
+	// Create a route group for SuperAdmin operations (following sensor_type.go pattern)
+	superAdminApi := router.Group("/api/v1/superadmin")
 	{
-		// Public routes (requires tenant validation from JWT) - READ ONLY for regular users
-		sensorThresholdGroup.Use(middleware.TenantMiddleware())
+		// Apply SuperAdminPassthroughMiddleware for all routes
+		superAdminApi.Use(middleware.SuperAdminPassthroughMiddleware())
 		{
-			// List all sensor thresholds (paginated)
-			sensorThresholdGroup.GET("", sensorThresholdController.GetThresholds)
-			// Get sensor threshold by ID
-			sensorThresholdGroup.GET("/:id", sensorThresholdController.GetThreshold)
-			// Threshold checking endpoint
-			sensorThresholdGroup.POST("/check", sensorThresholdController.CheckThresholds)
-			// Statistics endpoint
-			sensorThresholdGroup.GET("/statistics", sensorThresholdController.GetThresholdStatistics)
+			// Sensor threshold routes for SuperAdmin
+			sensorThresholds := superAdminApi.Group("/sensor-thresholds")
+			{
+				// Read operations
+				sensorThresholds.GET("/:id", sensorThresholdController.GetThreshold)
+				sensorThresholds.GET("", sensorThresholdController.GetThresholds)
+				sensorThresholds.GET("/statistics", sensorThresholdController.GetThresholdStatistics)
+
+				// Write operations
+				sensorThresholds.POST("", sensorThresholdController.CreateThreshold)
+				sensorThresholds.PUT("/:id", sensorThresholdController.UpdateThreshold)
+				sensorThresholds.DELETE("/:id", sensorThresholdController.DeleteThreshold)
+				sensorThresholds.POST("/check", sensorThresholdController.CheckThresholds)
+			}
+
+			// SuperAdmin sensor-specific threshold endpoints
+			sensors := superAdminApi.Group("/sensors")
+			{
+				sensors.GET("/:sensor_id/thresholds", sensorThresholdController.GetSensorThresholds)
+			}
 		}
 	}
 
-	// Sensor-specific threshold endpoints (public)
+	// Create a route group for regular user operations
+	userApi := router.Group("/api/v1/sensor-thresholds")
+	{
+		// Apply TenantMiddleware for all routes
+		userApi.Use(middleware.TenantMiddleware())
+		{
+			// Read-only operations for regular users
+			userApi.GET("", sensorThresholdController.GetThresholds)
+			userApi.GET("/:id", sensorThresholdController.GetThreshold)
+			userApi.POST("/check", sensorThresholdController.CheckThresholds)
+			userApi.GET("/statistics", sensorThresholdController.GetThresholdStatistics)
+		}
+	}
+
+	// Sensor-specific threshold endpoints for regular users
 	sensorsGroup := router.Group("/api/v1/sensors")
 	sensorsGroup.Use(middleware.TenantMiddleware())
 	{
 		sensorsGroup.GET("/:sensor_id/thresholds", sensorThresholdController.GetSensorThresholds)
-	}
-
-	// SuperAdmin only routes - use SuperAdmin middleware for role validation
-	superAdminGroup := router.Group("/api/v1/superadmin/sensor-thresholds")
-	superAdminGroup.Use(middleware.SuperAdminPassthroughMiddleware())
-	{
-		// List all sensor thresholds (for SuperAdmin - across all tenants)
-		superAdminGroup.GET("", sensorThresholdController.GetThresholds)
-		// Get sensor threshold by ID (for SuperAdmin)
-		superAdminGroup.GET("/:id", sensorThresholdController.GetThreshold)
-		// Create new sensor threshold
-		superAdminGroup.POST("", sensorThresholdController.CreateThreshold)
-		// Update sensor threshold
-		superAdminGroup.PUT("/:id", sensorThresholdController.UpdateThreshold)
-		// Delete sensor threshold
-		superAdminGroup.DELETE("/:id", sensorThresholdController.DeleteThreshold)
-		// Threshold checking endpoint (for SuperAdmin)
-		superAdminGroup.POST("/check", sensorThresholdController.CheckThresholds)
-		// Statistics endpoint (for SuperAdmin)
-		superAdminGroup.GET("/statistics", sensorThresholdController.GetThresholdStatistics)
-	}
-
-	// SuperAdmin sensor-specific threshold endpoints
-	superAdminSensorsGroup := router.Group("/api/v1/superadmin/sensors")
-	superAdminSensorsGroup.Use(middleware.SuperAdminPassthroughMiddleware())
-	{
-		superAdminSensorsGroup.GET("/:sensor_id/thresholds", sensorThresholdController.GetSensorThresholds)
 	}
 }

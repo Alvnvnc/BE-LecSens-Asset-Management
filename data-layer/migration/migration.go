@@ -12,51 +12,95 @@ import (
 
 // MigrateDatabase creates database if it doesn't exist and runs all migrations
 func MigrateDatabase(cfg *config.Config) error {
-	// First, connect to postgres directly to create the database if needed
-	postgresConn := fmt.Sprintf("host=%s port=%s user=%s password=%s dbname=postgres sslmode=disable",
-		cfg.DB.Host, cfg.DB.Port, cfg.DB.User, cfg.DB.Password)
-
-	db, err := sql.Open("postgres", postgresConn)
-	if err != nil {
-		return fmt.Errorf("failed to connect to postgres: %v", err)
-	}
-	defer db.Close()
-
-	// Check if the database exists
-	var exists bool
-	query := fmt.Sprintf("SELECT EXISTS (SELECT 1 FROM pg_database WHERE datname = '%s')", cfg.DB.Name)
-	err = db.QueryRow(query).Scan(&exists)
-	if err != nil {
-		return fmt.Errorf("failed to check if database exists: %v", err)
-	}
-
-	// Create the database if it doesn't exist
-	if !exists {
-		log.Printf("Creating database '%s'...", cfg.DB.Name)
-		_, err = db.Exec(fmt.Sprintf("CREATE DATABASE %s", cfg.DB.Name))
-		if err != nil {
-			return fmt.Errorf("failed to create database: %v", err)
-		}
-		log.Printf("Database '%s' created successfully", cfg.DB.Name)
-	} else {
-		log.Printf("Database '%s' already exists", cfg.DB.Name)
-	}
-
-	// Now connect to the actual database to create tables
+	// Try to connect to the target database directly first
 	dsn := fmt.Sprintf("host=%s port=%s user=%s password=%s dbname=%s sslmode=disable",
 		cfg.DB.Host, cfg.DB.Port, cfg.DB.User, cfg.DB.Password, cfg.DB.Name)
 
 	appDB, err := sql.Open("postgres", dsn)
-	if err != nil {
-		return fmt.Errorf("failed to connect to application database: %v", err)
+	if err == nil {
+		err = appDB.Ping()
+		if err == nil {
+			log.Printf("Database '%s' already exists and is accessible", cfg.DB.Name)
+			// Database exists, proceed with migrations
+			defer appDB.Close()
+			return runMigrationsWithDB(appDB, cfg)
+		}
+		appDB.Close()
 	}
 
+	// If target database doesn't exist, try to create it
+	// Try connecting to different admin databases in order of preference
+	adminDatabases := []string{cfg.DB.Name, "postgres", "template1"}
+	var adminDB *sql.DB
+
+	for _, dbName := range adminDatabases {
+		adminConn := fmt.Sprintf("host=%s port=%s user=%s password=%s dbname=%s sslmode=disable",
+			cfg.DB.Host, cfg.DB.Port, cfg.DB.User, cfg.DB.Password, dbName)
+
+		adminDB, err = sql.Open("postgres", adminConn)
+		if err != nil {
+			continue
+		}
+
+		err = adminDB.Ping()
+		if err == nil {
+			log.Printf("Connected to admin database '%s' for database management", dbName)
+			break
+		}
+		adminDB.Close()
+		adminDB = nil
+	}
+
+	if adminDB == nil {
+		return fmt.Errorf("failed to connect to any admin database (%v) to manage target database '%s'", adminDatabases, cfg.DB.Name)
+	}
+	defer adminDB.Close()
+
+	// Check if the target database exists (only if we're not already connected to it)
+	if adminDatabases[0] != cfg.DB.Name {
+		var exists bool
+		query := fmt.Sprintf("SELECT EXISTS (SELECT 1 FROM pg_database WHERE datname = '%s')", cfg.DB.Name)
+		err = adminDB.QueryRow(query).Scan(&exists)
+		if err != nil {
+			return fmt.Errorf("failed to check if database exists: %v", err)
+		}
+
+		// Create the database if it doesn't exist
+		if !exists {
+			log.Printf("Creating database '%s'...", cfg.DB.Name)
+			_, err = adminDB.Exec(fmt.Sprintf("CREATE DATABASE %s", cfg.DB.Name))
+			if err != nil {
+				return fmt.Errorf("failed to create database: %v", err)
+			}
+			log.Printf("Database '%s' created successfully", cfg.DB.Name)
+		} else {
+			log.Printf("Database '%s' already exists", cfg.DB.Name)
+		}
+
+		// Now connect to the actual database to create tables
+		dsn = fmt.Sprintf("host=%s port=%s user=%s password=%s dbname=%s sslmode=disable",
+			cfg.DB.Host, cfg.DB.Port, cfg.DB.User, cfg.DB.Password, cfg.DB.Name)
+
+		appDB, err = sql.Open("postgres", dsn)
+		if err != nil {
+			return fmt.Errorf("failed to connect to application database: %v", err)
+		}
+		defer appDB.Close()
+	} else {
+		// We're already connected to the target database
+		appDB = adminDB
+	}
+
+	return runMigrationsWithDB(appDB, cfg)
+}
+
+// runMigrationsWithDB runs migrations on the provided database connection
+func runMigrationsWithDB(appDB *sql.DB, cfg *config.Config) error {
 	// Create locations table if not exists
-	err = CreateLocationsTableIfNotExists(appDB)
+	err := CreateLocationsTableIfNotExists(appDB)
 	if err != nil {
 		return fmt.Errorf("failed to create locations table: %v", err)
 	}
-	defer appDB.Close()
 
 	// Run migrations
 	err = runMigrations(cfg)
