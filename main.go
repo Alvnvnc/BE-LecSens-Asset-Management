@@ -72,6 +72,8 @@ func main() {
 	sensorMeasurementFieldRepo := repository.NewSensorMeasurementFieldRepository(db)
 	sensorMeasurementTypeRepo := repository.NewSensorMeasurementTypeRepository(db)
 	iotSensorReadingRepo := repository.NewIoTSensorReadingRepository(db)
+	sensorThresholdRepo := repository.NewSensorThresholdRepository(db)
+	assetAlertRepo := repository.NewAssetAlertRepository(db)
 
 	// Initialize services
 	log.Println("Initializing services")
@@ -83,7 +85,9 @@ func main() {
 	sensorTypeService := service.NewSensorTypeService(sensorTypeRepo)
 	sensorMeasurementFieldService := service.NewSensorMeasurementFieldService(sensorMeasurementFieldRepo)
 	sensorMeasurementTypeService := service.NewSensorMeasurementTypeService(sensorMeasurementTypeRepo)
-	iotSensorReadingService := service.NewIoTSensorReadingService(iotSensorReadingRepo, assetSensorRepo, sensorTypeRepo, assetRepo, locationRepo)
+	sensorThresholdService := service.NewSensorThresholdService(sensorThresholdRepo, assetSensorRepo, assetAlertRepo)
+	assetAlertService := service.NewAssetAlertService(assetAlertRepo, assetRepo, assetSensorRepo)
+	iotSensorReadingService := service.NewIoTSensorReadingService(iotSensorReadingRepo, assetSensorRepo, sensorTypeRepo, assetRepo, locationRepo, sensorThresholdService, sensorMeasurementTypeRepo)
 
 	// Initialize controllers
 	assetController := controller.NewAssetController(assetService, cfg)
@@ -95,6 +99,8 @@ func main() {
 	sensorMeasurementFieldController := controller.NewSensorMeasurementFieldController(sensorMeasurementFieldService)
 	sensorMeasurementTypeController := controller.NewSensorMeasurementTypeController(sensorMeasurementTypeService, cfg)
 	iotSensorReadingController := controller.NewIoTSensorReadingController(iotSensorReadingService)
+	sensorThresholdController := controller.NewSensorThresholdController(sensorThresholdService)
+	assetAlertController := controller.NewAssetAlertController(assetAlertService)
 
 	// Initialize JWT config
 	jwtConfig := middleware.JWTConfig{
@@ -119,6 +125,8 @@ func main() {
 		sensorMeasurementFieldController,
 		sensorMeasurementTypeController,
 		iotSensorReadingController,
+		sensorThresholdController,
+		assetAlertController,
 		jwtConfig,
 	)
 

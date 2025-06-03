@@ -19,11 +19,13 @@ import (
 
 // IoTSensorReadingService handles business logic for IoT sensor readings
 type IoTSensorReadingService struct {
-	iotSensorReadingRepo repository.IoTSensorReadingRepository
-	assetSensorRepo      repository.AssetSensorRepository
-	sensorTypeRepo       *repository.SensorTypeRepository
-	assetRepo            repository.AssetRepository
-	locationRepo         *repository.LocationRepository
+	iotSensorReadingRepo      repository.IoTSensorReadingRepository
+	assetSensorRepo           repository.AssetSensorRepository
+	sensorTypeRepo            *repository.SensorTypeRepository
+	assetRepo                 repository.AssetRepository
+	locationRepo              *repository.LocationRepository
+	sensorThresholdService    *SensorThresholdService                    // For threshold checking
+	sensorMeasurementTypeRepo repository.SensorMeasurementTypeRepository // For getting measurement types
 }
 
 // NewIoTSensorReadingService creates a new instance of IoTSensorReadingService
@@ -33,13 +35,17 @@ func NewIoTSensorReadingService(
 	sensorTypeRepo *repository.SensorTypeRepository,
 	assetRepo repository.AssetRepository,
 	locationRepo *repository.LocationRepository,
+	sensorThresholdService *SensorThresholdService,
+	sensorMeasurementTypeRepo repository.SensorMeasurementTypeRepository,
 ) *IoTSensorReadingService {
 	return &IoTSensorReadingService{
-		iotSensorReadingRepo: iotSensorReadingRepo,
-		assetSensorRepo:      assetSensorRepo,
-		sensorTypeRepo:       sensorTypeRepo,
-		assetRepo:            assetRepo,
-		locationRepo:         locationRepo,
+		iotSensorReadingRepo:      iotSensorReadingRepo,
+		assetSensorRepo:           assetSensorRepo,
+		sensorTypeRepo:            sensorTypeRepo,
+		assetRepo:                 assetRepo,
+		locationRepo:              locationRepo,
+		sensorThresholdService:    sensorThresholdService,
+		sensorMeasurementTypeRepo: sensorMeasurementTypeRepo,
 	}
 }
 
@@ -107,6 +113,9 @@ func (s *IoTSensorReadingService) CreateIoTSensorReading(ctx context.Context, re
 	}
 
 	log.Printf("Successfully created IoT sensor reading with ID: %s", reading.ID)
+
+	// Check thresholds for the new reading (non-blocking)
+	go s.checkThresholdsForReading(ctx, reading)
 
 	// Convert to response DTO
 	return s.toResponseDTO(reading), nil
@@ -177,6 +186,9 @@ func (s *IoTSensorReadingService) CreateBatchIoTSensorReading(ctx context.Contex
 		log.Printf("Error creating batch IoT sensor readings: %v", err)
 		return nil, fmt.Errorf("failed to create batch IoT sensor readings: %w", err)
 	}
+
+	// Check thresholds for batch readings (non-blocking)
+	go s.checkThresholdsForMultipleReadings(ctx, readings)
 
 	// Convert to response DTOs
 	for _, reading := range readings {
@@ -1161,6 +1173,9 @@ func (s *IoTSensorReadingService) CreateFlexibleIoTSensorReading(ctx context.Con
 
 	log.Printf("Successfully created %d flexible IoT sensor readings", len(flexibleReadings))
 
+	// Check thresholds for flexible readings (non-blocking)
+	go s.checkThresholdsForMultipleReadings(ctx, flexibleReadings)
+
 	// Convert to response using the first reading as base (all have same basic info)
 	if len(flexibleReadings) > 0 {
 		resp := s.toResponseDTO(flexibleReadings[0])
@@ -1401,4 +1416,100 @@ func (s *IoTSensorReadingService) ParseTextToFlexibleReading(ctx context.Context
 		IoTSensorReadingResponse: reading,
 		MeasurementData:          measurementData,
 	}, nil
+}
+
+// checkThresholdsForReading checks if a sensor reading breaches any thresholds and creates alerts
+func (s *IoTSensorReadingService) checkThresholdsForReading(
+	ctx context.Context,
+	reading *entity.IoTSensorReadingFlexible,
+) {
+	// Skip threshold checking if service is not available
+	if s.sensorThresholdService == nil {
+		return
+	}
+
+	// Only check numeric values for threshold breaches
+	if reading.NumericValue == nil {
+		return
+	}
+
+	// Get measurement types for this sensor type
+	measurementTypes, err := s.sensorMeasurementTypeRepo.GetBySensorTypeID(ctx, reading.SensorTypeID)
+	if err != nil {
+		log.Printf("Failed to get measurement types for threshold checking: %v", err)
+		return
+	}
+
+	// Find the measurement type that matches the reading's measurement type
+	var targetMeasurementTypeID uuid.UUID
+	for _, mt := range measurementTypes {
+		if mt.Name == reading.MeasurementType {
+			targetMeasurementTypeID = mt.ID
+			break
+		}
+	}
+
+	// If no matching measurement type found, skip threshold checking
+	if targetMeasurementTypeID == uuid.Nil {
+		log.Printf("No measurement type found for '%s', skipping threshold check", reading.MeasurementType)
+		return
+	}
+
+	// Get asset information for alert context
+	assetSensor, err := s.assetSensorRepo.GetByID(ctx, reading.AssetSensorID)
+	if err != nil {
+		log.Printf("Failed to get asset sensor for threshold checking: %v", err)
+		return
+	}
+
+	if assetSensor == nil {
+		log.Printf("Asset sensor not found for threshold checking")
+		return
+	}
+
+	// Convert flexible reading to IoTSensorReading
+	iotReading := &entity.IoTSensorReading{
+		ID:            reading.ID,
+		TenantID:      reading.TenantID,
+		AssetSensorID: reading.AssetSensorID,
+		SensorTypeID:  reading.SensorTypeID,
+		ReadingTime:   reading.ReadingTime,
+		CreatedAt:     reading.CreatedAt,
+		UpdatedAt:     reading.UpdatedAt,
+	}
+
+	// Check thresholds for this measurement value
+	err = s.sensorThresholdService.CheckThresholdsForValue(
+		ctx,
+		iotReading,
+		reading.MeasurementType,
+		*reading.NumericValue,
+	)
+
+	if err != nil {
+		log.Printf("Error checking thresholds for reading %s: %v", reading.ID, err)
+		return
+	}
+
+	log.Printf("Successfully checked thresholds for sensor reading %s (value: %.2f, type: %s)",
+		reading.ID, *reading.NumericValue, reading.MeasurementType)
+}
+
+// checkThresholdsForMultipleReadings checks thresholds for multiple readings in batch
+func (s *IoTSensorReadingService) checkThresholdsForMultipleReadings(
+	ctx context.Context,
+	readings []*entity.IoTSensorReadingFlexible,
+) {
+	// Skip if threshold service is not available
+	if s.sensorThresholdService == nil {
+		return
+	}
+
+	// Process each reading for threshold checking
+	for _, reading := range readings {
+		// Use a separate goroutine for non-blocking threshold checking
+		go func(r *entity.IoTSensorReadingFlexible) {
+			s.checkThresholdsForReading(ctx, r)
+		}(reading)
+	}
 }

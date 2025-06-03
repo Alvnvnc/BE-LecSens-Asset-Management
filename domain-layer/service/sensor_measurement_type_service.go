@@ -11,11 +11,11 @@ import (
 
 // SensorMeasurementTypeService handles business logic for sensor measurement types
 type SensorMeasurementTypeService struct {
-	repo *repository.SensorMeasurementTypeRepository
+	repo repository.SensorMeasurementTypeRepository
 }
 
 // NewSensorMeasurementTypeService creates a new instance of SensorMeasurementTypeService
-func NewSensorMeasurementTypeService(repo *repository.SensorMeasurementTypeRepository) *SensorMeasurementTypeService {
+func NewSensorMeasurementTypeService(repo repository.SensorMeasurementTypeRepository) *SensorMeasurementTypeService {
 	return &SensorMeasurementTypeService{
 		repo: repo,
 	}

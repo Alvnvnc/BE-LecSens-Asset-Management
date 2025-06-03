@@ -464,8 +464,8 @@ func (r *iotSensorReadingRepository) GetReadingsInTimeRange(ctx context.Context,
 		WITH reading_details AS (
 			SELECT 
 				isr.*,
-				asn.id as asn_id, asn.asset_id as an_asset_id, asn.name as an_name,
-				asn.status as an_status, asn.configuration as an_configuration,
+				asn.id as asn_id, asn.asset_id as asn_asset_id, asn.name as asn_name,
+				asn.status as asn_status, asn.configuration as asn_configuration,
 				st.id as st_id, st.name as st_name, st.description as st_description,
 				st.manufacturer as st_manufacturer, st.model as st_model,
 				st.version as st_version, st.is_active as st_is_active
@@ -629,7 +629,7 @@ func (r *iotSensorReadingRepository) GetByAssetSensorID(ctx context.Context, ass
 			WITH reading_details AS (
 				SELECT 
 					isr.*,
-					asn.id as asn_id, asn.asset_id as an_asset_id, asn.name as an_name,
+					asn.id as asn_id, asn.asset_id as asn_asset_id, asn.name as asn_name,
 					asn.status as asn_status, asn.configuration as asn_configuration,
 					st.id as st_id, st.name as st_name, st.description as st_description,
 					st.manufacturer as st_manufacturer, st.model as st_model,
@@ -686,7 +686,7 @@ func (r *iotSensorReadingRepository) GetByAssetSensorID(ctx context.Context, ass
 			WITH reading_details AS (
 				SELECT 
 					isr.*,
-					asn.id as asn_id, asn.asset_id as an_asset_id, asn.name as an_name,
+					asn.id as asn_id, asn.asset_id as asn_asset_id, asn.name as asn_name,
 					asn.status as asn_status, asn.configuration as asn_configuration,
 					st.id as st_id, st.name as st_name, st.description as st_description,
 					st.manufacturer as st_manufacturer, st.model as st_model,
@@ -771,7 +771,7 @@ func (r *iotSensorReadingRepository) GetByMacAddress(ctx context.Context, macAdd
 			WITH reading_details AS (
 				SELECT 
 					isr.*,
-					asn.id as asn_id, asn.asset_id as an_asset_id, asn.name as an_name,
+					asn.id as asn_id, asn.asset_id as asn_asset_id, asn.name as asn_name,
 					asn.status as asn_status, asn.configuration as asn_configuration,
 					st.id as st_id, st.name as st_name, st.description as st_description,
 					st.manufacturer as st_manufacturer, st.model as st_model,
@@ -828,7 +828,7 @@ func (r *iotSensorReadingRepository) GetByMacAddress(ctx context.Context, macAdd
 			WITH reading_details AS (
 				SELECT 
 					isr.*,
-					asn.id as asn_id, asn.asset_id as an_asset_id, asn.name as an_name,
+					asn.id as asn_id, asn.asset_id as asn_asset_id, asn.name as asn_name,
 					asn.status as asn_status, asn.configuration as asn_configuration,
 					st.id as st_id, st.name as st_name, st.description as st_description,
 					st.manufacturer as st_manufacturer, st.model as st_model,
@@ -913,7 +913,7 @@ func (r *iotSensorReadingRepository) GetBySensorTypeID(ctx context.Context, sens
 			WITH reading_details AS (
 				SELECT 
 					isr.*,
-					asn.id as asn_id, asn.asset_id as an_asset_id, asn.name as an_name,
+					asn.id as asn_id, asn.asset_id as asn_asset_id, asn.name as asn_name,
 					asn.status as asn_status, asn.configuration as asn_configuration,
 					st.id as st_id, st.name as st_name, st.description as st_description,
 					st.manufacturer as st_manufacturer, st.model as st_model,
@@ -970,7 +970,7 @@ func (r *iotSensorReadingRepository) GetBySensorTypeID(ctx context.Context, sens
 			WITH reading_details AS (
 				SELECT 
 					isr.*,
-					asn.id as asn_id, asn.asset_id as an_asset_id, asn.name as an_name,
+					asn.id as asn_id, asn.asset_id as asn_asset_id, asn.name as asn_name,
 					asn.status as asn_status, asn.configuration as asn_configuration,
 					st.id as st_id, st.name as st_name, st.description as st_description,
 					st.manufacturer as st_manufacturer, st.model as st_model,
@@ -1554,7 +1554,7 @@ func (r *iotSensorReadingRepository) List(ctx context.Context, req IoTSensorRead
 		WITH reading_details AS (
 			SELECT 
 				isr.*,
-				asn.id as asn_id, asn.asset_id as an_asset_id, asn.name as an_name,
+				asn.id as asn_id, asn.asset_id as asn_asset_id, asn.name as asn_name,
 				asn.status as asn_status, asn.configuration as asn_configuration,
 				st.id as st_id, st.name as st_name, st.description as st_description,
 				st.manufacturer as st_manufacturer, st.model as st_model,
@@ -1599,7 +1599,9 @@ func (r *iotSensorReadingRepository) List(ctx context.Context, req IoTSensorRead
 		FROM reading_details rd
 		LEFT JOIN sensor_measurement_types smt ON smt.sensor_type_id = rd.st_id
 		GROUP BY rd.id, rd.tenant_id, rd.asset_sensor_id, rd.sensor_type_id, rd.mac_address,
-				rd.location_id, rd.location_name, rd.reading_time, rd.created_at, rd.updated_at,
+				rd.location_id, rd.location_name, rd.measurement_type, rd.measurement_label, 
+				rd.measurement_unit, rd.numeric_value, rd.text_value, rd.boolean_value,
+				rd.data_source, rd.original_field_name, rd.reading_time, rd.created_at, rd.updated_at,
 				rd.asn_id, rd.asn_asset_id, rd.asn_name, rd.asn_status, rd.asn_configuration,
 				rd.st_id, rd.st_name, rd.st_description, rd.st_manufacturer, rd.st_model,
 				rd.st_version, rd.st_is_active

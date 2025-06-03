@@ -9,11 +9,9 @@ import (
 	"errors"
 	"fmt"
 	"log"
-	"strings"
 	"time"
 
 	"github.com/google/uuid"
-	"github.com/lib/pq"
 )
 
 // AssetSensorWithDetails represents an asset sensor with all its related information
@@ -249,55 +247,12 @@ func (r *assetSensorRepository) GetByID(ctx context.Context, id uuid.UUID) (*Ass
 	return &result, nil
 }
 
-// GetByAssetID retrieves all sensors for a specific asset
+// GetByAssetID retrieves all sensors for a specific asset with complete details
 func (r *assetSensorRepository) GetByAssetID(ctx context.Context, assetID uuid.UUID) ([]*AssetSensorWithDetails, error) {
-	// First, get all sensor type IDs for this asset
-	var sensorTypeIDs []uuid.UUID
-	err := r.DB.QueryRowContext(ctx, `
-		SELECT array_agg(DISTINCT sensor_type_id)
-		FROM asset_sensors
-		WHERE asset_id = $1`, assetID).Scan(&sensorTypeIDs)
-	if err != nil {
-		return nil, fmt.Errorf("failed to get sensor type IDs: %w", err)
-	}
+	log.Printf("DEBUG: GetByAssetID called with asset ID: %s", assetID)
 
-	// Get measurement fields for all sensor types
-	fieldsQuery := `
-		SELECT 
-			smf.id,
-			smf.name,
-			smf.label,
-			smf.description,
-			smf.data_type,
-			smf.required,
-			smf.unit,
-			smf.min,
-			smf.max
-		FROM sensor_measurement_fields smf
-		JOIN sensor_measurement_types smt ON smf.sensor_measurement_type_id = smt.id
-		WHERE smt.sensor_type_id = ANY($1)
-		ORDER BY smf.name`
-
-	fields, err := r.DB.QueryContext(ctx, fieldsQuery, pq.Array(sensorTypeIDs))
-	if err != nil {
-		return nil, fmt.Errorf("failed to get measurement fields: %w", err)
-	}
-	defer fields.Close()
-
-	// Build dynamic column names
-	var columnNames []string
-	for fields.Next() {
-		var field struct {
-			Name string
-		}
-		if err := fields.Scan(&field.Name); err != nil {
-			return nil, fmt.Errorf("failed to scan field name: %w", err)
-		}
-		columnNames = append(columnNames, fmt.Sprintf("COALESCE(isr.%s, NULL) as %s", field.Name, field.Name))
-	}
-
-	// Main query
-	query := fmt.Sprintf(`
+	// Advanced query to get complete sensor information including measurement types and fields
+	query := `
 		WITH sensor_details AS (
 			SELECT 
 				asn.*,
@@ -310,47 +265,52 @@ func (r *assetSensorRepository) GetByAssetID(ctx context.Context, assetID uuid.U
 		)
 		SELECT 
 			sd.*,
-			json_agg(
-				json_build_object(
-					'id', smt.id,
-					'name', smt.name,
-					'description', smt.description,
-					'properties_schema', smt.properties_schema,
-					'ui_configuration', smt.ui_configuration,
-					'version', smt.version,
-					'is_active', smt.is_active,
-					'fields', (
-						SELECT json_agg(
-							json_build_object(
-								'id', smf.id,
-								'name', smf.name,
-								'label', smf.label,
-								'description', smf.description,
-								'data_type', smf.data_type,
-								'required', smf.required,
-								'unit', smf.unit,
-								'min', smf.min,
-								'max', smf.max,
-								'value', %s
+			COALESCE(
+				json_agg(
+					json_build_object(
+						'id', smt.id,
+						'name', smt.name,
+						'description', smt.description,
+						'properties_schema', smt.properties_schema,
+						'ui_configuration', smt.ui_configuration,
+						'version', smt.version,
+						'is_active', smt.is_active,
+						'fields', (
+							SELECT COALESCE(
+								json_agg(
+									json_build_object(
+										'id', smf.id,
+										'name', smf.name,
+										'label', smf.label,
+										'description', smf.description,
+										'data_type', smf.data_type,
+										'required', smf.required,
+										'unit', smf.unit,
+										'min', smf.min,
+										'max', smf.max
+									)
+									ORDER BY smf.name
+								), '[]'::json
 							)
+							FROM sensor_measurement_fields smf
+							WHERE smf.sensor_measurement_type_id = smt.id
 						)
-						FROM sensor_measurement_fields smf
-						LEFT JOIN iot_sensor_readings isr ON isr.asset_sensor_id = sd.id
-						WHERE smf.sensor_measurement_type_id = smt.id
 					)
-				)
+					ORDER BY smt.name
+				) FILTER (WHERE smt.id IS NOT NULL), '[]'::json
 			) as measurement_types
 		FROM sensor_details sd
-		LEFT JOIN sensor_measurement_types smt ON smt.sensor_type_id = sd.st_id
+		LEFT JOIN sensor_measurement_types smt ON smt.sensor_type_id = sd.st_id AND smt.is_active = true
 		GROUP BY sd.id, sd.tenant_id, sd.asset_id, sd.sensor_type_id, sd.name, sd.status,
 				sd.configuration, sd.last_reading_value, sd.last_reading_time, sd.last_reading_values,
 				sd.created_at, sd.updated_at, sd.st_id, sd.st_name, sd.st_description,
 				sd.st_manufacturer, sd.st_model, sd.st_version, sd.st_is_active
-		ORDER BY sd.created_at DESC`,
-		strings.Join(columnNames, ", "))
+		ORDER BY sd.created_at DESC`
 
+	log.Printf("DEBUG: Executing detailed query with measurement types and fields...")
 	rows, err := r.DB.QueryContext(ctx, query, assetID)
 	if err != nil {
+		log.Printf("DEBUG: Error executing query: %v", err)
 		return nil, fmt.Errorf("failed to get asset sensors: %w", err)
 	}
 	defer rows.Close()
@@ -385,21 +345,73 @@ func (r *assetSensorRepository) GetByAssetID(ctx context.Context, assetID uuid.U
 		)
 
 		if err != nil {
+			log.Printf("DEBUG: Error scanning row: %v", err)
 			return nil, fmt.Errorf("failed to scan asset sensor: %w", err)
 		}
 
+		log.Printf("DEBUG: Successfully scanned sensor: ID=%s, Name=%s", sensor.ID, sensor.Name)
 		result.AssetSensor = &sensor
 
 		// Parse measurement types JSON
-		if measurementTypesJSON != nil {
+		if measurementTypesJSON != nil && len(measurementTypesJSON) > 0 {
+			log.Printf("DEBUG: Parsing measurement types JSON for sensor %s", sensor.ID)
+			log.Printf("DEBUG: Measurement types JSON: %s", string(measurementTypesJSON))
+
 			if err := json.Unmarshal(measurementTypesJSON, &result.MeasurementTypes); err != nil {
-				return nil, fmt.Errorf("failed to parse measurement types: %w", err)
+				log.Printf("DEBUG: Error unmarshaling measurement types JSON: %v", err)
+				log.Printf("DEBUG: Problematic JSON: %s", string(measurementTypesJSON))
+				// Initialize empty array instead of failing
+				result.MeasurementTypes = []struct {
+					ID               uuid.UUID       `json:"id"`
+					Name             string          `json:"name"`
+					Description      string          `json:"description"`
+					PropertiesSchema json.RawMessage `json:"properties_schema"`
+					UIConfiguration  json.RawMessage `json:"ui_configuration"`
+					Version          string          `json:"version"`
+					IsActive         bool            `json:"is_active"`
+					Fields           []struct {
+						ID          uuid.UUID `json:"id"`
+						Name        string    `json:"name"`
+						Label       string    `json:"label"`
+						Description *string   `json:"description"`
+						DataType    string    `json:"data_type"`
+						Required    bool      `json:"required"`
+						Unit        *string   `json:"unit"`
+						Min         *float64  `json:"min"`
+						Max         *float64  `json:"max"`
+					} `json:"fields"`
+				}{}
+			} else {
+				log.Printf("DEBUG: Successfully parsed %d measurement types for sensor %s", len(result.MeasurementTypes), sensor.ID)
 			}
+		} else {
+			log.Printf("DEBUG: No measurement types JSON for sensor %s, initializing empty array", sensor.ID)
+			result.MeasurementTypes = []struct {
+				ID               uuid.UUID       `json:"id"`
+				Name             string          `json:"name"`
+				Description      string          `json:"description"`
+				PropertiesSchema json.RawMessage `json:"properties_schema"`
+				UIConfiguration  json.RawMessage `json:"ui_configuration"`
+				Version          string          `json:"version"`
+				IsActive         bool            `json:"is_active"`
+				Fields           []struct {
+					ID          uuid.UUID `json:"id"`
+					Name        string    `json:"name"`
+					Label       string    `json:"label"`
+					Description *string   `json:"description"`
+					DataType    string    `json:"data_type"`
+					Required    bool      `json:"required"`
+					Unit        *string   `json:"unit"`
+					Min         *float64  `json:"min"`
+					Max         *float64  `json:"max"`
+				} `json:"fields"`
+			}{}
 		}
 
 		sensors = append(sensors, &result)
 	}
 
+	log.Printf("DEBUG: Successfully retrieved %d sensors with detailed information", len(sensors))
 	return sensors, nil
 }
 

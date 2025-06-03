@@ -6,6 +6,12 @@ import (
 	"net/http"
 )
 
+// ErrorResponse represents a standard error response for API endpoints
+type ErrorResponse struct {
+	Error   string `json:"error"`
+	Message string `json:"message"`
+}
+
 // Custom error types for better error handling
 var (
 	// Tenant errors

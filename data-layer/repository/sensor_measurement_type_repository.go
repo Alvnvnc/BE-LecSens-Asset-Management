@@ -10,20 +10,31 @@ import (
 	"github.com/google/uuid"
 )
 
-// SensorMeasurementTypeRepository implements the repository interface for sensor measurement types
-type SensorMeasurementTypeRepository struct {
+// SensorMeasurementTypeRepository defines the interface for sensor measurement type operations
+type SensorMeasurementTypeRepository interface {
+	Create(ctx context.Context, sensorMeasurementType *dto.SensorMeasurementTypeDTO) error
+	GetByID(ctx context.Context, id uuid.UUID) (*dto.SensorMeasurementTypeDTO, error)
+	List(ctx context.Context, offset, limit int) ([]dto.SensorMeasurementTypeDTO, int, error)
+	Update(ctx context.Context, sensorMeasurementType *dto.SensorMeasurementTypeDTO) error
+	Delete(ctx context.Context, id uuid.UUID) error
+	GetActive(ctx context.Context) ([]dto.SensorMeasurementTypeDTO, error)
+	GetBySensorTypeID(ctx context.Context, sensorTypeID uuid.UUID) ([]dto.SensorMeasurementTypeDTO, error)
+}
+
+// sensorMeasurementTypeRepository implements the repository interface for sensor measurement types
+type sensorMeasurementTypeRepository struct {
 	db *sql.DB
 }
 
 // NewSensorMeasurementTypeRepository creates a new instance of SensorMeasurementTypeRepository
-func NewSensorMeasurementTypeRepository(db *sql.DB) *SensorMeasurementTypeRepository {
-	return &SensorMeasurementTypeRepository{
+func NewSensorMeasurementTypeRepository(db *sql.DB) SensorMeasurementTypeRepository {
+	return &sensorMeasurementTypeRepository{
 		db: db,
 	}
 }
 
 // Create creates a new sensor measurement type
-func (r *SensorMeasurementTypeRepository) Create(ctx context.Context, sensorMeasurementType *dto.SensorMeasurementTypeDTO) error {
+func (r *sensorMeasurementTypeRepository) Create(ctx context.Context, sensorMeasurementType *dto.SensorMeasurementTypeDTO) error {
 	query := `
 		INSERT INTO sensor_measurement_types (
 			id, sensor_type_id, name, description, properties_schema,
@@ -64,7 +75,7 @@ func (r *SensorMeasurementTypeRepository) Create(ctx context.Context, sensorMeas
 }
 
 // GetByID retrieves a sensor measurement type by its ID
-func (r *SensorMeasurementTypeRepository) GetByID(ctx context.Context, id uuid.UUID) (*dto.SensorMeasurementTypeDTO, error) {
+func (r *sensorMeasurementTypeRepository) GetByID(ctx context.Context, id uuid.UUID) (*dto.SensorMeasurementTypeDTO, error) {
 	query := `
 		SELECT id, sensor_type_id, name, description, properties_schema,
 			ui_configuration, version, is_active, created_at, updated_at
@@ -112,7 +123,7 @@ func (r *SensorMeasurementTypeRepository) GetByID(ctx context.Context, id uuid.U
 }
 
 // List retrieves a paginated list of sensor measurement types
-func (r *SensorMeasurementTypeRepository) List(ctx context.Context, offset, limit int) ([]dto.SensorMeasurementTypeDTO, int, error) {
+func (r *sensorMeasurementTypeRepository) List(ctx context.Context, offset, limit int) ([]dto.SensorMeasurementTypeDTO, int, error) {
 	// Get total count
 	var total int
 	countQuery := `SELECT COUNT(*) FROM sensor_measurement_types`
@@ -178,7 +189,7 @@ func (r *SensorMeasurementTypeRepository) List(ctx context.Context, offset, limi
 }
 
 // Update updates an existing sensor measurement type
-func (r *SensorMeasurementTypeRepository) Update(ctx context.Context, sensorMeasurementType *dto.SensorMeasurementTypeDTO) error {
+func (r *sensorMeasurementTypeRepository) Update(ctx context.Context, sensorMeasurementType *dto.SensorMeasurementTypeDTO) error {
 	query := `
 		UPDATE sensor_measurement_types
 		SET name = $1, description = $2, properties_schema = $3,
@@ -224,7 +235,7 @@ func (r *SensorMeasurementTypeRepository) Update(ctx context.Context, sensorMeas
 }
 
 // Delete deletes a sensor measurement type by its ID
-func (r *SensorMeasurementTypeRepository) Delete(ctx context.Context, id uuid.UUID) error {
+func (r *sensorMeasurementTypeRepository) Delete(ctx context.Context, id uuid.UUID) error {
 	query := `DELETE FROM sensor_measurement_types WHERE id = $1`
 
 	result, err := r.db.ExecContext(ctx, query, id)
@@ -245,7 +256,7 @@ func (r *SensorMeasurementTypeRepository) Delete(ctx context.Context, id uuid.UU
 }
 
 // GetActive retrieves all active sensor measurement types
-func (r *SensorMeasurementTypeRepository) GetActive(ctx context.Context) ([]dto.SensorMeasurementTypeDTO, error) {
+func (r *sensorMeasurementTypeRepository) GetActive(ctx context.Context) ([]dto.SensorMeasurementTypeDTO, error) {
 	query := `
 		SELECT id, sensor_type_id, name, description, properties_schema,
 			ui_configuration, version, is_active, created_at, updated_at
@@ -302,7 +313,7 @@ func (r *SensorMeasurementTypeRepository) GetActive(ctx context.Context) ([]dto.
 }
 
 // GetBySensorTypeID retrieves all measurement types for a specific sensor type
-func (r *SensorMeasurementTypeRepository) GetBySensorTypeID(ctx context.Context, sensorTypeID uuid.UUID) ([]dto.SensorMeasurementTypeDTO, error) {
+func (r *sensorMeasurementTypeRepository) GetBySensorTypeID(ctx context.Context, sensorTypeID uuid.UUID) ([]dto.SensorMeasurementTypeDTO, error) {
 	query := `
 		SELECT id, sensor_type_id, name, description, properties_schema,
 			ui_configuration, version, is_active, created_at, updated_at

@@ -68,3 +68,35 @@ func (s *LocationService) UpdateLocation(ctx context.Context, location *entity.L
 	log.Printf("Location Service: Successfully updated location: %s", location.ID)
 	return nil
 }
+
+// CreateLocation creates a new location
+func (s *LocationService) CreateLocation(ctx context.Context, location *entity.Location) error {
+	log.Printf("Location Service: Creating new location - Name: %s", location.Name)
+
+	// Set creation time
+	location.CreatedAt = time.Now()
+	location.UpdatedAt = time.Now()
+
+	err := s.locationRepo.Create(ctx, location)
+	if err != nil {
+		log.Printf("Location Service: Error creating location: %v", err)
+		return fmt.Errorf("failed to create location: %w", err)
+	}
+
+	log.Printf("Location Service: Successfully created location: %s", location.ID)
+	return nil
+}
+
+// DeleteLocation deletes a location by ID
+func (s *LocationService) DeleteLocation(ctx context.Context, id uuid.UUID) error {
+	log.Printf("Location Service: Deleting location - ID: %s", id)
+
+	err := s.locationRepo.Delete(ctx, id)
+	if err != nil {
+		log.Printf("Location Service: Error deleting location: %v", err)
+		return fmt.Errorf("failed to delete location: %w", err)
+	}
+
+	log.Printf("Location Service: Successfully deleted location: %s", id)
+	return nil
+}

@@ -23,14 +23,16 @@ func SetupLocationRoutes(
 		}
 	}
 
-	// Protected routes for updating locations (SuperAdmin only)
+	// Protected routes for managing locations (SuperAdmin only)
 	superAdminApi := router.Group("/api/v1/superadmin")
 	superAdminApi.Use(middleware.SuperAdminPassthroughMiddleware())
 	{
 		locations := superAdminApi.Group("/locations")
 		{
-			// Write operations - SuperAdmin only
+			// CRUD operations - SuperAdmin only
+			locations.POST("", locationController.CreateLocation)
 			locations.PUT("/:id", locationController.UpdateLocation)
+			locations.DELETE("/:id", locationController.DeleteLocation)
 		}
 	}
 }

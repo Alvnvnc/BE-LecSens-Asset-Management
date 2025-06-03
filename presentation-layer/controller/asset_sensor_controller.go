@@ -173,6 +173,52 @@ func (c *AssetSensorController) GetAssetSensors(ctx *gin.Context) {
 	})
 }
 
+// GetAssetSensorsDetailed handles GET /api/v1/superadmin/asset-sensors/asset/:asset_id
+// Returns detailed sensor information including sensor types and measurement types
+func (c *AssetSensorController) GetAssetSensorsDetailed(ctx *gin.Context) {
+	assetIDParam := ctx.Param("asset_id")
+	log.Printf("DEBUG: GetAssetSensorsDetailed called with asset_id: %s", assetIDParam)
+
+	assetID, err := uuid.Parse(assetIDParam)
+	if err != nil {
+		log.Printf("DEBUG: Invalid UUID format for asset_id: %s, error: %v", assetIDParam, err)
+		ctx.JSON(http.StatusBadRequest, gin.H{
+			"error":   "Bad Request",
+			"message": "Invalid asset ID format",
+		})
+		return
+	}
+
+	log.Printf("DEBUG: Calling GetAssetSensorsDetailed service with parsed UUID: %s", assetID)
+
+	sensors, err := c.assetSensorService.GetAssetSensorsDetailed(ctx, assetID)
+	if err != nil {
+		log.Printf("DEBUG: Error from GetAssetSensorsDetailed service: %v", err)
+		if common.IsNotFoundError(err) {
+			log.Printf("DEBUG: Asset sensors not found, returning 404")
+			ctx.JSON(http.StatusNotFound, gin.H{
+				"error":   "Not Found",
+				"message": err.Error(),
+			})
+			return
+		}
+		log.Printf("DEBUG: Internal server error, returning 500")
+		ctx.JSON(http.StatusInternalServerError, gin.H{
+			"error":   "Internal Server Error",
+			"message": "Failed to retrieve asset sensors",
+		})
+		return
+	}
+
+	log.Printf("DEBUG: Successfully retrieved %d detailed sensors", len(sensors))
+
+	// Return detailed sensor information including sensor types and measurement types
+	ctx.JSON(http.StatusOK, gin.H{
+		"message": "Asset sensors retrieved successfully",
+		"data":    sensors,
+	})
+}
+
 // ListAssetSensors handles GET /api/v1/asset-sensors
 func (c *AssetSensorController) ListAssetSensors(ctx *gin.Context) {
 	// Parse pagination parameters

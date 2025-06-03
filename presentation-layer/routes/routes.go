@@ -19,6 +19,8 @@ func SetupRoutes(
 	sensorMeasurementFieldController *controller.SensorMeasurementFieldController,
 	sensorMeasurementTypeController *controller.SensorMeasurementTypeController,
 	iotSensorReadingController *controller.IoTSensorReadingController,
+	sensorThresholdController *controller.SensorThresholdController,
+	assetAlertController *controller.AssetAlertController,
 	jwtConfig middleware.JWTConfig,
 ) {
 
@@ -56,4 +58,10 @@ func SetupRoutes(
 
 	// Setup IoT Sensor Reading routes
 	SetupIoTSensorReadingRoutes(router, iotSensorReadingController)
+
+	// Setup Sensor Threshold routes
+	SetupSensorThresholdRoutes(router, sensorThresholdController)
+
+	// Setup Asset Alert routes
+	SetupAssetAlertRoutes(router, assetAlertController)
 }

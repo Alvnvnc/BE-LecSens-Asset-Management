@@ -85,3 +85,43 @@ func (c *LocationController) UpdateLocation(ctx *gin.Context) {
 
 	ctx.JSON(http.StatusOK, location)
 }
+
+// CreateLocation handles POST /api/v1/superadmin/locations
+// This endpoint requires SuperAdmin access
+func (c *LocationController) CreateLocation(ctx *gin.Context) {
+	// Parse request body
+	var location entity.Location
+	if err := ctx.ShouldBindJSON(&location); err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	// Create the location
+	err := c.locationService.CreateLocation(ctx, &location)
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	ctx.JSON(http.StatusCreated, location)
+}
+
+// DeleteLocation handles DELETE /api/v1/superadmin/locations/:id
+// This endpoint requires SuperAdmin access
+func (c *LocationController) DeleteLocation(ctx *gin.Context) {
+	id := ctx.Param("id")
+	locationID, err := uuid.Parse(id)
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Invalid location ID format"})
+		return
+	}
+
+	// Delete the location
+	err = c.locationService.DeleteLocation(ctx, locationID)
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	ctx.JSON(http.StatusOK, gin.H{"message": "Location deleted successfully"})
+}

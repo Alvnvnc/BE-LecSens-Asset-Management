@@ -4,16 +4,44 @@ main
 # Ignore the vendor directory
 vendor/
 
-# Ignore the Git repository files
+# Git
 .git
 .gitignore
 
-# Ignore the Dockerfile and Docker Compose file
-# Dockerfile
-# docker-compose.yml
+# Documentation
+*.md
+docs/
 
-# Ignore Go test files
+# Development files
+.env
+.env.local
+.env.development
+
+# IDE files
+.vscode/
+.idea/
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Go test files
 *_test.go
 
-# Ignore local Go modules cache
-# go.sum
+# Test files
+test/
+
+# Temporary files
+*.tmp
+*.temp
+*.log
+
+# Docker files (optional - uncomment if needed)
+# Dockerfile
+# docker-compose.yaml
+# .dockerignore

@@ -217,3 +217,56 @@ func (r *LocationRepository) Update(ctx context.Context, location *entity.Locati
 
 	return nil
 }
+
+// Create creates a new location
+func (r *LocationRepository) Create(ctx context.Context, location *entity.Location) error {
+	query := `
+		INSERT INTO locations (region_code, name, description, address, 
+		                      longitude, latitude, hierarchy_level, is_active,
+		                      created_at, updated_at)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+		RETURNING id
+	`
+
+	err := r.DB.QueryRowContext(
+		ctx,
+		query,
+		location.RegionCode,
+		location.Name,
+		location.Description,
+		location.Address,
+		location.Longitude,
+		location.Latitude,
+		location.HierarchyLevel,
+		location.IsActive,
+		location.CreatedAt,
+		location.UpdatedAt,
+	).Scan(&location.ID)
+
+	if err != nil {
+		return fmt.Errorf("failed to create location: %w", err)
+	}
+
+	return nil
+}
+
+// Delete deletes a location by ID
+func (r *LocationRepository) Delete(ctx context.Context, id uuid.UUID) error {
+	query := `DELETE FROM locations WHERE id = $1`
+
+	result, err := r.DB.ExecContext(ctx, query, id)
+	if err != nil {
+		return fmt.Errorf("failed to delete location: %w", err)
+	}
+
+	rowsAffected, err := result.RowsAffected()
+	if err != nil {
+		return fmt.Errorf("failed to get rows affected: %w", err)
+	}
+
+	if rowsAffected == 0 {
+		return fmt.Errorf("location not found: %v", id)
+	}
+
+	return nil
+}

@@ -120,6 +120,29 @@ func (s *AssetSensorService) GetAssetSensors(ctx context.Context, assetID uuid.U
 	return responses, nil
 }
 
+// GetAssetSensorsDetailed retrieves all sensors for a specific asset with complete details including sensor types and measurement types
+func (s *AssetSensorService) GetAssetSensorsDetailed(ctx context.Context, assetID uuid.UUID) ([]*dto.AssetSensorDetailedResponse, error) {
+	// Validate that the asset exists and user has access to it
+	asset, err := s.assetRepo.GetByID(ctx, assetID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to validate asset: %w", err)
+	}
+	if asset == nil {
+		return nil, common.NewNotFoundError("asset", assetID.String())
+	}
+
+	sensorsWithDetails, err := s.assetSensorRepo.GetByAssetID(ctx, assetID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get asset sensors: %w", err)
+	}
+
+	responses := make([]*dto.AssetSensorDetailedResponse, len(sensorsWithDetails))
+	for i, sensorWithDetails := range sensorsWithDetails {
+		responses[i] = s.entityToDetailedResponse(sensorWithDetails)
+	}
+	return responses, nil
+}
+
 // ListAssetSensors retrieves asset sensors with pagination
 func (s *AssetSensorService) ListAssetSensors(ctx context.Context, page, pageSize int) (*dto.AssetSensorListResponse, error) {
 	// Validate pagination parameters
@@ -309,6 +332,75 @@ func (s *AssetSensorService) GetCompleteSensorInfo(ctx context.Context, id uuid.
 	log.Printf("DEBUG: Number of measurement types: %d", len(sensor.MeasurementTypes))
 
 	return sensor, nil
+}
+
+// entityToDetailedResponse converts an AssetSensorWithDetails to detailed response DTO
+func (s *AssetSensorService) entityToDetailedResponse(sensorWithDetails *repository.AssetSensorWithDetails) *dto.AssetSensorDetailedResponse {
+	sensor := sensorWithDetails.AssetSensor
+
+	var tenantID uuid.UUID
+	if sensor.TenantID != nil {
+		tenantID = *sensor.TenantID
+	}
+
+	// Convert sensor type
+	sensorType := dto.SensorTypeInfo{
+		ID:           sensorWithDetails.SensorType.ID,
+		Name:         sensorWithDetails.SensorType.Name,
+		Description:  sensorWithDetails.SensorType.Description,
+		Manufacturer: sensorWithDetails.SensorType.Manufacturer,
+		Model:        sensorWithDetails.SensorType.Model,
+		Version:      sensorWithDetails.SensorType.Version,
+		IsActive:     sensorWithDetails.SensorType.IsActive,
+	}
+
+	// Convert measurement types
+	measurementTypes := make([]dto.MeasurementTypeInfo, len(sensorWithDetails.MeasurementTypes))
+	for i, mt := range sensorWithDetails.MeasurementTypes {
+		// Convert fields
+		fields := make([]dto.MeasurementFieldInfo, len(mt.Fields))
+		for j, field := range mt.Fields {
+			fields[j] = dto.MeasurementFieldInfo{
+				ID:          field.ID,
+				Name:        field.Name,
+				Label:       field.Label,
+				Description: field.Description,
+				DataType:    field.DataType,
+				Required:    field.Required,
+				Unit:        field.Unit,
+				Min:         field.Min,
+				Max:         field.Max,
+			}
+		}
+
+		measurementTypes[i] = dto.MeasurementTypeInfo{
+			ID:               mt.ID,
+			Name:             mt.Name,
+			Description:      mt.Description,
+			PropertiesSchema: mt.PropertiesSchema,
+			UIConfiguration:  mt.UIConfiguration,
+			Version:          mt.Version,
+			IsActive:         mt.IsActive,
+			Fields:           fields,
+		}
+	}
+
+	return &dto.AssetSensorDetailedResponse{
+		ID:                sensor.ID,
+		TenantID:          tenantID,
+		AssetID:           sensor.AssetID,
+		SensorTypeID:      sensor.SensorTypeID,
+		Name:              sensor.Name,
+		Status:            sensor.Status,
+		Configuration:     sensor.Configuration,
+		LastReadingValue:  sensor.LastReadingValue,
+		LastReadingTime:   sensor.LastReadingTime,
+		LastReadingValues: sensor.LastReadingValues,
+		CreatedAt:         sensor.CreatedAt,
+		UpdatedAt:         sensor.UpdatedAt,
+		SensorType:        sensorType,
+		MeasurementTypes:  measurementTypes,
+	}
 }
 
 // entityToResponse converts an entity to response DTO

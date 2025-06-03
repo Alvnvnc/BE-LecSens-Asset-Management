@@ -283,7 +283,8 @@ func SuperAdminPassthroughMiddleware() gin.HandlerFunc {
 		log.Printf("SuperAdmin Passthrough Middleware: User role is: %s", role)
 
 		// Check if user has SuperAdmin privileges
-		if role != "SUPERADMIN" {
+		// Accept both "SUPERADMIN" and "SuperAdmin" formats
+		if role != "SUPERADMIN" && role != "SuperAdmin" {
 			log.Printf("SuperAdmin Passthrough Middleware: Access denied for role: %s", role)
 			c.AbortWithStatusJSON(http.StatusForbidden, gin.H{
 				"error":   "Forbidden",
