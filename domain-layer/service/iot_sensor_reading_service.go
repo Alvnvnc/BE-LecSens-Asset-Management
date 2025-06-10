@@ -571,6 +571,82 @@ func (s *IoTSensorReadingService) DeleteReadingsByAssetSensor(ctx context.Contex
 	return nil
 }
 
+// ListFlexibleIoTSensorReadings retrieves flexible IoT sensor readings with pagination and filtering
+func (s *IoTSensorReadingService) ListFlexibleIoTSensorReadings(ctx context.Context, req *dto.IoTSensorReadingListRequest) (*dto.FlexibleIoTSensorReadingListResponse, error) {
+	// Validate pagination
+	if req.Page <= 0 {
+		req.Page = 1
+	}
+	if req.PageSize <= 0 {
+		req.PageSize = 20
+	}
+	if req.PageSize > 100 {
+		req.PageSize = 100
+	}
+
+	// Convert to repository request
+	repoReq := repository.IoTSensorReadingListRequest{
+		AssetSensorID: req.AssetSensorID,
+		SensorTypeID:  req.SensorTypeID,
+		MacAddress:    req.MacAddress,
+		LocationID:    nil, // Location filtering is not supported in the current DTO
+		FromTime:      req.FromTime,
+		ToTime:        req.ToTime,
+		Page:          req.Page,
+		PageSize:      req.PageSize,
+	}
+
+	readings, total, err := s.iotSensorReadingRepo.ListFlexible(ctx, repoReq)
+	if err != nil {
+		log.Printf("Error listing flexible IoT sensor readings: %v", err)
+		return nil, fmt.Errorf("failed to list flexible IoT sensor readings: %w", err)
+	}
+
+	// Convert to DTOs
+	var responseDTOs []dto.FlexibleIoTSensorReadingResponse
+	for _, reading := range readings {
+		// Convert measurement data to proper format
+		measurementData := make(map[string]dto.MeasurementValue)
+
+		// Add measurement data from the reading
+		measurementValue := dto.MeasurementValue{}
+		if reading.MeasurementLabel != nil {
+			measurementValue.Label = *reading.MeasurementLabel
+		}
+		if reading.MeasurementUnit != nil {
+			measurementValue.Unit = *reading.MeasurementUnit
+		}
+
+		// Set value based on type
+		if reading.NumericValue != nil {
+			measurementValue.Value = *reading.NumericValue
+		} else if reading.TextValue != nil {
+			measurementValue.Value = *reading.TextValue
+		} else if reading.BooleanValue != nil {
+			measurementValue.Value = *reading.BooleanValue
+		}
+
+		measurementData[reading.MeasurementType] = measurementValue
+
+		responseDTO := dto.FlexibleIoTSensorReadingResponse{
+			IoTSensorReadingResponse: s.toResponseDTO(reading),
+			MeasurementData:          measurementData,
+		}
+		responseDTOs = append(responseDTOs, responseDTO)
+	}
+
+	// Calculate pagination info
+	totalPages := int(math.Ceil(float64(total) / float64(req.PageSize)))
+
+	return &dto.FlexibleIoTSensorReadingListResponse{
+		Readings:   responseDTOs,
+		Page:       req.Page,
+		Limit:      req.PageSize,
+		Total:      int64(total),
+		TotalPages: totalPages,
+	}, nil
+}
+
 // Helper methods
 
 // getLocationFromAssetSensor retrieves location information from asset sensor
@@ -638,6 +714,9 @@ func (s *IoTSensorReadingService) toResponseDTO(reading *entity.IoTSensorReading
 	}
 	if reading.MacAddress != nil {
 		response.MacAddress = *reading.MacAddress
+	}
+	if reading.LocationID != nil {
+		response.LocationID = reading.LocationID
 	}
 	if reading.LocationName != nil {
 		response.Location = *reading.LocationName
@@ -1191,7 +1270,7 @@ func (s *IoTSensorReadingService) CreateFlexibleIoTSensorReading(ctx context.Con
 
 // GetFlexibleIoTSensorReading gets a flexible IoT sensor reading by ID
 func (s *IoTSensorReadingService) GetFlexibleIoTSensorReading(ctx context.Context, id uuid.UUID) (*dto.FlexibleIoTSensorReadingResponse, error) {
-	flexibleReading, err := s.iotSensorReadingRepo.GetByID(ctx, id)
+	flexibleReading, err := s.iotSensorReadingRepo.GetFlexibleByID(ctx, id)
 	if err != nil {
 		log.Printf("Error getting flexible IoT sensor reading: %v", err)
 		return nil, fmt.Errorf("failed to get flexible IoT sensor reading: %w", err)
@@ -1512,4 +1591,91 @@ func (s *IoTSensorReadingService) checkThresholdsForMultipleReadings(
 			s.checkThresholdsForReading(ctx, r)
 		}(reading)
 	}
+}
+
+// CreateIoTSensorReadingWithAutoPopulation creates a new IoT sensor reading with auto-population of asset_sensor_id and location
+func (s *IoTSensorReadingService) CreateIoTSensorReadingWithAutoPopulation(ctx context.Context, req *dto.CreateIoTSensorReadingWithAutoPopulationRequest) (*dto.IoTSensorReadingResponse, error) {
+	var assetSensorID uuid.UUID
+
+	// If asset_sensor_id is not provided, auto-populate it based on sensor_type_id
+	if req.AssetSensorID == nil {
+		log.Printf("Auto-populating asset_sensor_id for sensor_type_id: %s", req.SensorTypeID)
+
+		// Get available asset sensors for this sensor type
+		assetSensors, err := s.iotSensorReadingRepo.GetAssetSensorsBySensorType(ctx, req.SensorTypeID)
+		if err != nil {
+			log.Printf("Error getting asset sensors for sensor type: %v", err)
+			return nil, fmt.Errorf("failed to get asset sensors for auto-population: %w", err)
+		}
+
+		if len(assetSensors) == 0 {
+			return nil, common.NewValidationError(fmt.Sprintf("no asset sensors found for sensor type %s", req.SensorTypeID), nil)
+		}
+
+		if len(assetSensors) > 1 {
+			// Multiple asset sensors found - return validation error with suggestions
+			var suggestions []string
+			for _, as := range assetSensors {
+				suggestions = append(suggestions, fmt.Sprintf("Asset Sensor: %s (Location: %s)", as.AssetSensorName, as.LocationName))
+			}
+			errorMsg := fmt.Sprintf("multiple asset sensors found for sensor type %s. Please specify asset_sensor_id. Available options: %s",
+				req.SensorTypeID, strings.Join(suggestions, "; "))
+			return nil, common.NewValidationError(errorMsg, nil)
+		}
+
+		// Use the single found asset sensor
+		assetSensorID = assetSensors[0].AssetSensorID
+		log.Printf("Auto-populated asset_sensor_id: %s for sensor type: %s", assetSensorID, req.SensorTypeID)
+	} else {
+		assetSensorID = *req.AssetSensorID
+	}
+
+	// Create the standard request with the determined asset_sensor_id
+	standardReq := &dto.CreateIoTSensorReadingRequest{
+		AssetSensorID: assetSensorID,
+		SensorTypeID:  req.SensorTypeID,
+		MacAddress:    req.MacAddress,
+		ReadingTime:   req.ReadingTime,
+	}
+
+	// Use the existing CreateIoTSensorReading method
+	return s.CreateIoTSensorReading(ctx, standardReq)
+}
+
+// GetAutoPopulationOptions returns available asset sensors for a given sensor type
+func (s *IoTSensorReadingService) GetAutoPopulationOptions(ctx context.Context, sensorTypeID uuid.UUID) (*dto.AutoPopulationOptionsResponse, error) {
+	log.Printf("Getting auto-population options for sensor_type_id: %s", sensorTypeID)
+
+	// Validate sensor type exists
+	sensorType, err := s.sensorTypeRepo.GetByID(sensorTypeID)
+	if err != nil {
+		log.Printf("Error validating sensor type: %v", err)
+		return nil, fmt.Errorf("failed to validate sensor type: %w", err)
+	}
+	if sensorType == nil {
+		return nil, common.NewValidationError("sensor type not found", nil)
+	}
+
+	// Get available asset sensors for this sensor type
+	assetSensors, err := s.iotSensorReadingRepo.GetAssetSensorsBySensorType(ctx, sensorTypeID)
+	if err != nil {
+		log.Printf("Error getting asset sensors for sensor type: %v", err)
+		return nil, fmt.Errorf("failed to get asset sensors: %w", err)
+	}
+
+	response := &dto.AutoPopulationOptionsResponse{
+		SensorTypeID:     sensorTypeID,
+		AvailableOptions: assetSensors,
+	}
+
+	if len(assetSensors) == 0 {
+		response.Message = "No asset sensors found for this sensor type"
+	} else if len(assetSensors) == 1 {
+		response.Message = "Asset sensor can be auto-populated"
+	} else {
+		response.Message = "Multiple asset sensors found - manual selection required"
+	}
+
+	log.Printf("Found %d asset sensors for sensor type %s", len(assetSensors), sensorTypeID)
+	return response, nil
 }

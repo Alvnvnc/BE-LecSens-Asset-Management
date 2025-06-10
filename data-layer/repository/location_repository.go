@@ -221,16 +221,16 @@ func (r *LocationRepository) Update(ctx context.Context, location *entity.Locati
 // Create creates a new location
 func (r *LocationRepository) Create(ctx context.Context, location *entity.Location) error {
 	query := `
-		INSERT INTO locations (region_code, name, description, address, 
+		INSERT INTO locations (id, region_code, name, description, address, 
 		                      longitude, latitude, hierarchy_level, is_active,
 		                      created_at, updated_at)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
-		RETURNING id
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
 	`
 
-	err := r.DB.QueryRowContext(
+	_, err := r.DB.ExecContext(
 		ctx,
 		query,
+		location.ID,
 		location.RegionCode,
 		location.Name,
 		location.Description,
@@ -241,7 +241,7 @@ func (r *LocationRepository) Create(ctx context.Context, location *entity.Locati
 		location.IsActive,
 		location.CreatedAt,
 		location.UpdatedAt,
-	).Scan(&location.ID)
+	)
 
 	if err != nil {
 		return fmt.Errorf("failed to create location: %w", err)

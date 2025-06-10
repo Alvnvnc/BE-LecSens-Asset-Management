@@ -27,6 +27,8 @@ func SetupAssetRoutes(router *gin.Engine, assetController *controller.AssetContr
 		{
 			// List all assets (for SuperAdmin - across all tenants)
 			superAdminGroup.GET("", assetController.ListAllAssets)
+			// Get asset detail by ID (for SuperAdmin - can view any tenant's asset)
+			superAdminGroup.GET("/:id", assetController.GetAssetDetail)
 			// Create new asset
 			superAdminGroup.POST("", assetController.CreateAsset)
 			// Update asset

@@ -92,6 +92,12 @@ func (c *AssetController) GetAsset(ctx *gin.Context) {
 		return
 	}
 
+	// Check if asset is nil (not found)
+	if asset == nil {
+		ctx.JSON(http.StatusNotFound, gin.H{"error": "asset not found"})
+		return
+	}
+
 	ctx.JSON(http.StatusOK, asset)
 }
 
@@ -142,6 +148,12 @@ func (c *AssetController) UpdateAsset(ctx *gin.Context) {
 		// Get existing asset first to check if it needs tenant assignment
 		existingAsset, err := c.assetService.GetAsset(ctx.Request.Context(), id)
 		if err != nil {
+			ctx.JSON(http.StatusNotFound, gin.H{"error": "asset not found"})
+			return
+		}
+
+		// Check if asset is nil (not found)
+		if existingAsset == nil {
 			ctx.JSON(http.StatusNotFound, gin.H{"error": "asset not found"})
 			return
 		}
@@ -251,4 +263,74 @@ func (c *AssetController) ListAllAssets(ctx *gin.Context) {
 	}
 
 	ctx.JSON(http.StatusOK, assets)
+}
+
+// GetAssetDetail handles retrieving detailed asset information for SuperAdmin
+func (c *AssetController) GetAssetDetail(ctx *gin.Context) {
+	// Check if user has SuperAdmin role
+	userRole, exists := ctx.Get("user_role")
+	if !exists || userRole != "SUPERADMIN" {
+		ctx.JSON(http.StatusForbidden, gin.H{"error": "SuperAdmin access required"})
+		return
+	}
+
+	id, err := uuid.Parse(ctx.Param("id"))
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": "invalid asset ID"})
+		return
+	}
+
+	asset, err := c.assetService.GetAsset(ctx.Request.Context(), id)
+	if err != nil {
+		ctx.JSON(http.StatusNotFound, gin.H{"error": "asset not found"})
+		return
+	}
+
+	// Check if asset is nil (not found)
+	if asset == nil {
+		ctx.JSON(http.StatusNotFound, gin.H{"error": "asset not found"})
+		return
+	}
+
+	// Create detailed response with additional information for SuperAdmin
+	response := gin.H{
+		"id":            asset.ID,
+		"name":          asset.Name,
+		"asset_type_id": asset.AssetTypeID,
+		"location_id":   asset.LocationID,
+		"tenant_id":     asset.TenantID,
+		"status":        asset.Status,
+		"properties":    asset.Properties,
+		"created_at":    asset.CreatedAt,
+		"updated_at":    asset.UpdatedAt,
+	}
+
+	// Try to get asset type information
+	if asset.AssetTypeID != uuid.Nil {
+		assetType, err := c.assetService.GetAssetTypeByID(ctx.Request.Context(), asset.AssetTypeID)
+		if err == nil && assetType != nil {
+			response["asset_type"] = gin.H{
+				"id":          assetType.ID,
+				"name":        assetType.Name,
+				"description": assetType.Description,
+			}
+		}
+	}
+
+	// Try to get location information
+	if asset.LocationID != uuid.Nil {
+		location, err := c.assetService.GetLocationByID(ctx.Request.Context(), asset.LocationID)
+		if err == nil && location != nil {
+			response["location"] = gin.H{
+				"id":          location.ID,
+				"name":        location.Name,
+				"description": location.Description,
+			}
+		}
+	}
+
+	ctx.JSON(http.StatusOK, gin.H{
+		"message": "Asset detail retrieved successfully",
+		"data":    response,
+	})
 }

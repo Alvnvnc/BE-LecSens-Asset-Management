@@ -31,6 +31,8 @@ func SetupIoTSensorReadingRoutes(router *gin.Engine, iotSensorReadingController 
 			iotSensorReadingGroup.GET("/by-time-range", iotSensorReadingController.ListReadingsByTimeRange)
 			// Get aggregated data for analytics
 			iotSensorReadingGroup.GET("/aggregated", iotSensorReadingController.GetAggregatedData)
+			// Get auto-population options for sensor type
+			iotSensorReadingGroup.GET("/auto-populate/options", iotSensorReadingController.GetAutoPopulationOptions)
 		}
 
 		// SuperAdmin only routes - use SuperAdmin middleware for role validation
@@ -43,6 +45,8 @@ func SetupIoTSensorReadingRoutes(router *gin.Engine, iotSensorReadingController 
 			superAdminGroup.POST("", iotSensorReadingController.CreateReading)
 			// Create batch readings
 			superAdminGroup.POST("/batch", iotSensorReadingController.CreateBatchReading)
+			// Create reading with auto-population of asset_sensor_id
+			superAdminGroup.POST("/auto-populate", iotSensorReadingController.CreateReadingWithAutoPopulation)
 			// Validate and create reading with schema validation
 			superAdminGroup.POST("/validate", iotSensorReadingController.ValidateAndCreateReading)
 			// Update reading
@@ -73,6 +77,8 @@ func SetupIoTSensorReadingRoutes(router *gin.Engine, iotSensorReadingController 
 			superAdminGroup.POST("/flexible/bulk", iotSensorReadingController.CreateBulkFlexibleReadings)
 			// Parse text input to flexible JSON structure
 			superAdminGroup.POST("/parse-text", iotSensorReadingController.ParseTextToFlexible)
+			// List flexible readings with pagination and filtering
+			superAdminGroup.GET("/flexible", iotSensorReadingController.ListFlexibleReadings)
 			// Get flexible reading by ID with dynamic measurement data
 			superAdminGroup.GET("/flexible/:id", iotSensorReadingController.GetFlexibleReading)
 			// Create reading from any raw JSON structure

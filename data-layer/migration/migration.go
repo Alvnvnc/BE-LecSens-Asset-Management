@@ -139,5 +139,26 @@ func runMigrations(cfg *config.Config) error {
 	}
 	log.Println("Asset alerts table created successfully")
 
+	// Run asset activity migration
+	log.Println("Creating asset activities table...")
+	if err := CreateAssetActivityTableIfNotExists(db); err != nil {
+		return fmt.Errorf("asset activity migration failed: %v", err)
+	}
+	log.Println("Asset activities table created successfully")
+
+	// Run sensor status migration
+	log.Println("Creating sensor status table...")
+	if err := CreateSensorStatusTableIfNotExists(db); err != nil {
+		return fmt.Errorf("sensor status migration failed: %v", err)
+	}
+	log.Println("Sensor status table created successfully")
+
+	// Run sensor logs migration
+	log.Println("Creating sensor logs table...")
+	if err := CreateSensorLogsTableIfNotExists(db); err != nil {
+		return fmt.Errorf("sensor logs migration failed: %v", err)
+	}
+	log.Println("Sensor logs table created successfully")
+
 	return nil
 }

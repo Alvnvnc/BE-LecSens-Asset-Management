@@ -1272,3 +1272,177 @@ func (c *IoTSensorReadingController) CreateFromArrayJSON(ctx *gin.Context) {
 		"count":   len(readings),
 	})
 }
+
+// ListFlexibleReadings handles GET /api/v1/superadmin/iot-sensor-readings/flexible
+func (c *IoTSensorReadingController) ListFlexibleReadings(ctx *gin.Context) {
+	// Parse query parameters
+	var req dto.IoTSensorReadingListRequest
+
+	// Parse pagination parameters
+	if pageStr := ctx.Query("page"); pageStr != "" {
+		if page, err := strconv.Atoi(pageStr); err == nil && page > 0 {
+			req.Page = page
+		} else {
+			req.Page = 1
+		}
+	} else {
+		req.Page = 1
+	}
+
+	if pageSizeStr := ctx.Query("page_size"); pageSizeStr != "" {
+		if pageSize, err := strconv.Atoi(pageSizeStr); err == nil && pageSize > 0 && pageSize <= 1000 {
+			req.PageSize = pageSize
+		} else {
+			req.PageSize = 10
+		}
+	} else {
+		req.PageSize = 10
+	}
+
+	// Parse filter parameters
+	if assetSensorIDStr := ctx.Query("asset_sensor_id"); assetSensorIDStr != "" {
+		if assetSensorID, err := uuid.Parse(assetSensorIDStr); err == nil {
+			req.AssetSensorID = &assetSensorID
+		}
+	}
+
+	if sensorTypeIDStr := ctx.Query("sensor_type_id"); sensorTypeIDStr != "" {
+		if sensorTypeID, err := uuid.Parse(sensorTypeIDStr); err == nil {
+			req.SensorTypeID = &sensorTypeID
+		}
+	}
+
+	if macAddress := ctx.Query("mac_address"); macAddress != "" {
+		req.MacAddress = &macAddress
+	}
+
+	// Parse time range parameters
+	if fromTimeStr := ctx.Query("from_time"); fromTimeStr != "" {
+		if fromTime, err := time.Parse(time.RFC3339, fromTimeStr); err == nil {
+			req.FromTime = &fromTime
+		}
+	}
+
+	if toTimeStr := ctx.Query("to_time"); toTimeStr != "" {
+		if toTime, err := time.Parse(time.RFC3339, toTimeStr); err == nil {
+			req.ToTime = &toTime
+		}
+	}
+
+	log.Printf("Listing flexible IoT sensor readings with request: %+v", req)
+
+	readings, err := c.iotSensorReadingService.ListFlexibleIoTSensorReadings(ctx, &req)
+	if err != nil {
+		log.Printf("Error listing flexible IoT sensor readings: %v", err)
+		if common.IsValidationError(err) {
+			ctx.JSON(http.StatusBadRequest, gin.H{
+				"error":   "Bad Request",
+				"message": err.Error(),
+			})
+			return
+		}
+		ctx.JSON(http.StatusInternalServerError, gin.H{
+			"error":   "Internal Server Error",
+			"message": "Failed to list flexible readings",
+		})
+		return
+	}
+
+	ctx.JSON(http.StatusOK, gin.H{
+		"message": "Flexible IoT sensor readings retrieved successfully",
+		"data":    readings,
+	})
+}
+
+// CreateReadingWithAutoPopulation handles POST /api/v1/superadmin/iot-sensor-readings/auto-populate
+func (c *IoTSensorReadingController) CreateReadingWithAutoPopulation(ctx *gin.Context) {
+	var req dto.CreateIoTSensorReadingWithAutoPopulationRequest
+	if err := ctx.ShouldBindJSON(&req); err != nil {
+		log.Printf("Failed to bind JSON request: %v", err)
+		ctx.JSON(http.StatusBadRequest, gin.H{
+			"error":   "Bad Request",
+			"message": "Invalid request body",
+		})
+		return
+	}
+
+	log.Printf("Creating IoT sensor reading with auto-population: %+v", req)
+
+	reading, err := c.iotSensorReadingService.CreateIoTSensorReadingWithAutoPopulation(ctx, &req)
+	if err != nil {
+		log.Printf("Error creating IoT sensor reading with auto-population: %v", err)
+		if common.IsValidationError(err) {
+			ctx.JSON(http.StatusBadRequest, gin.H{
+				"error":   "Bad Request",
+				"message": err.Error(),
+			})
+			return
+		}
+		if common.IsNotFoundError(err) {
+			ctx.JSON(http.StatusNotFound, gin.H{
+				"error":   "Not Found",
+				"message": err.Error(),
+			})
+			return
+		}
+		ctx.JSON(http.StatusInternalServerError, gin.H{
+			"error":   "Internal Server Error",
+			"message": "Failed to create IoT sensor reading with auto-population",
+		})
+		return
+	}
+
+	log.Printf("Successfully created IoT sensor reading with auto-population: %+v", reading)
+
+	ctx.JSON(http.StatusCreated, gin.H{
+		"message": "IoT sensor reading created successfully with auto-population",
+		"data":    reading,
+	})
+}
+
+// GetAutoPopulationOptions handles GET /api/v1/iot-sensor-readings/auto-populate/options
+func (c *IoTSensorReadingController) GetAutoPopulationOptions(ctx *gin.Context) {
+	sensorTypeIDStr := ctx.Query("sensor_type_id")
+	if sensorTypeIDStr == "" {
+		ctx.JSON(http.StatusBadRequest, gin.H{
+			"error":   "Bad Request",
+			"message": "sensor_type_id parameter is required",
+		})
+		return
+	}
+
+	sensorTypeID, err := uuid.Parse(sensorTypeIDStr)
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{
+			"error":   "Bad Request",
+			"message": "Invalid sensor_type_id format",
+		})
+		return
+	}
+
+	log.Printf("Getting auto-population options for sensor type ID: %v", sensorTypeID)
+
+	options, err := c.iotSensorReadingService.GetAutoPopulationOptions(ctx, sensorTypeID)
+	if err != nil {
+		log.Printf("Error getting auto-population options: %v", err)
+		if common.IsNotFoundError(err) {
+			ctx.JSON(http.StatusNotFound, gin.H{
+				"error":   "Not Found",
+				"message": err.Error(),
+			})
+			return
+		}
+		ctx.JSON(http.StatusInternalServerError, gin.H{
+			"error":   "Internal Server Error",
+			"message": "Failed to get auto-population options",
+		})
+		return
+	}
+
+	log.Printf("Successfully retrieved %d auto-population options", len(options.AvailableOptions))
+
+	ctx.JSON(http.StatusOK, gin.H{
+		"message": "Auto-population options retrieved successfully",
+		"data":    options,
+	})
+}

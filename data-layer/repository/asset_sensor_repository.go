@@ -353,7 +353,7 @@ func (r *assetSensorRepository) GetByAssetID(ctx context.Context, assetID uuid.U
 		result.AssetSensor = &sensor
 
 		// Parse measurement types JSON
-		if measurementTypesJSON != nil && len(measurementTypesJSON) > 0 {
+		if len(measurementTypesJSON) > 0 {
 			log.Printf("DEBUG: Parsing measurement types JSON for sensor %s", sensor.ID)
 			log.Printf("DEBUG: Measurement types JSON: %s", string(measurementTypesJSON))
 

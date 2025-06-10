@@ -74,6 +74,8 @@ func main() {
 	iotSensorReadingRepo := repository.NewIoTSensorReadingRepository(db)
 	sensorThresholdRepo := repository.NewSensorThresholdRepository(db)
 	assetAlertRepo := repository.NewAssetAlertRepository(db)
+	sensorStatusRepo := repository.NewSensorStatusRepository(db)
+	sensorLogsRepo := repository.NewSensorLogsRepository(db)
 
 	// Initialize services
 	log.Println("Initializing services")
@@ -88,6 +90,8 @@ func main() {
 	sensorThresholdService := service.NewSensorThresholdService(sensorThresholdRepo, assetSensorRepo, assetAlertRepo)
 	assetAlertService := service.NewAssetAlertService(assetAlertRepo, assetRepo, assetSensorRepo)
 	iotSensorReadingService := service.NewIoTSensorReadingService(iotSensorReadingRepo, assetSensorRepo, sensorTypeRepo, assetRepo, locationRepo, sensorThresholdService, sensorMeasurementTypeRepo)
+	sensorStatusService := service.NewSensorStatusService(sensorStatusRepo)
+	sensorLogsService := service.NewSensorLogsService(sensorLogsRepo)
 
 	// Initialize controllers
 	assetController := controller.NewAssetController(assetService, cfg)
@@ -101,6 +105,8 @@ func main() {
 	iotSensorReadingController := controller.NewIoTSensorReadingController(iotSensorReadingService)
 	sensorThresholdController := controller.NewSensorThresholdController(sensorThresholdService)
 	assetAlertController := controller.NewAssetAlertController(assetAlertService)
+	sensorStatusController := controller.NewSensorStatusController(sensorStatusService)
+	sensorLogsController := controller.NewSensorLogsController(sensorLogsService)
 
 	// Initialize JWT config
 	jwtConfig := middleware.JWTConfig{
@@ -128,6 +134,8 @@ func main() {
 		iotSensorReadingController,
 		sensorThresholdController,
 		assetAlertController,
+		sensorLogsController,
+		sensorStatusController,
 		jwtConfig,
 	)
 

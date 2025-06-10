@@ -15,6 +15,14 @@ type CreateIoTSensorReadingRequest struct {
 	ReadingTime   *time.Time `json:"reading_time,omitempty"` // Optional, defaults to current time
 }
 
+// CreateIoTSensorReadingWithAutoPopulationRequest represents the request to create IoT sensor reading with auto-population
+type CreateIoTSensorReadingWithAutoPopulationRequest struct {
+	AssetSensorID *uuid.UUID `json:"asset_sensor_id,omitempty"` // Optional - will be auto-populated if not provided
+	SensorTypeID  uuid.UUID  `json:"sensor_type_id" binding:"required" validate:"required"`
+	MacAddress    string     `json:"mac_address" binding:"required" validate:"required"`
+	ReadingTime   *time.Time `json:"reading_time,omitempty"` // Optional, defaults to current time
+}
+
 // CreateBatchIoTSensorReadingRequest represents the request to create multiple IoT sensor readings
 type CreateBatchIoTSensorReadingRequest struct {
 	Readings []CreateIoTSensorReadingRequest `json:"readings" binding:"required" validate:"required,min=1,max=1000"`
@@ -33,6 +41,7 @@ type IoTSensorReadingResponse struct {
 	AssetSensorID   uuid.UUID                   `json:"asset_sensor_id"`
 	SensorTypeID    uuid.UUID                   `json:"sensor_type_id"`
 	MacAddress      string                      `json:"mac_address"`
+	LocationID      *uuid.UUID                  `json:"location_id,omitempty"`
 	Location        string                      `json:"location"`
 	ReadingTime     time.Time                   `json:"reading_time"`
 	CreatedAt       time.Time                   `json:"created_at"`
@@ -292,6 +301,15 @@ type FlexibleIoTSensorReadingResponse struct {
 	MeasurementData map[string]MeasurementValue `json:"measurement_data,omitempty"`
 }
 
+// FlexibleIoTSensorReadingListResponse represents the response for listing flexible IoT sensor readings with pagination
+type FlexibleIoTSensorReadingListResponse struct {
+	Readings   []FlexibleIoTSensorReadingResponse `json:"readings"`
+	Page       int                                `json:"page"`
+	Limit      int                                `json:"limit"`
+	Total      int64                              `json:"total"`
+	TotalPages int                                `json:"total_pages"`
+}
+
 // TextToJSONRequest represents a request to convert text/raw data to JSON format
 type TextToJSONRequest struct {
 	TextData      string `json:"text_data" binding:"required"`
@@ -308,4 +326,21 @@ type TextToJSONResponse struct {
 	Message        string                 `json:"message"`
 	Warnings       []string               `json:"warnings,omitempty"`
 	SuggestedField map[string]string      `json:"suggested_fields,omitempty"` // Field mapping suggestions
+}
+
+// AutoPopulationOptionsResponse represents available asset sensors for auto-population
+type AutoPopulationOptionsResponse struct {
+	SensorTypeID     uuid.UUID                 `json:"sensor_type_id"`
+	AvailableOptions []AssetSensorLocationInfo `json:"available_options"`
+	Message          string                    `json:"message"`
+}
+
+// AssetSensorLocationInfo represents location information for asset sensors
+type AssetSensorLocationInfo struct {
+	AssetSensorID   uuid.UUID `json:"asset_sensor_id"`
+	AssetSensorName string    `json:"asset_sensor_name"`
+	AssetID         uuid.UUID `json:"asset_id"`
+	AssetName       string    `json:"asset_name"`
+	LocationID      uuid.UUID `json:"location_id"`
+	LocationName    string    `json:"location_name"`
 }

@@ -35,16 +35,16 @@ func NewAssetRepository(db *sql.DB) AssetRepository {
 func (r *assetRepository) Create(ctx context.Context, asset *entity.Asset) error {
 	query := `
 		INSERT INTO assets (
-			tenant_id, name, asset_type_id, location_id, status, properties, created_at, updated_at
+			id, tenant_id, name, asset_type_id, location_id, status, properties, created_at, updated_at
 		) VALUES (
-			$1, $2, $3, $4, $5, $6, $7, $8
-		) RETURNING id`
+			$1, $2, $3, $4, $5, $6, $7, $8, $9
+		)`
 
-	var id uuid.UUID
 	now := time.Now()
-	err := r.db.QueryRowContext(
+	_, err := r.db.ExecContext(
 		ctx,
 		query,
+		asset.ID,
 		asset.TenantID,
 		asset.Name,
 		asset.AssetTypeID,
@@ -53,13 +53,12 @@ func (r *assetRepository) Create(ctx context.Context, asset *entity.Asset) error
 		asset.Properties,
 		now,
 		now,
-	).Scan(&id)
+	)
 
 	if err != nil {
 		return fmt.Errorf("failed to create asset: %w", err)
 	}
 
-	asset.ID = id
 	asset.CreatedAt = now
 	asset.UpdatedAt = now
 	return nil

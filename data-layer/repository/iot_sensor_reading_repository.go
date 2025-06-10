@@ -3,11 +3,13 @@ package repository
 import (
 	"be-lecsens/asset_management/data-layer/entity"
 	"be-lecsens/asset_management/helpers/common"
+	"be-lecsens/asset_management/helpers/dto"
 	"context"
 	"database/sql"
 	"encoding/json"
 	"fmt"
 	"log"
+	"strings"
 	"time"
 
 	"github.com/google/uuid"
@@ -74,6 +76,7 @@ type IoTSensorReadingRepository interface {
 	GetByAssetSensorID(ctx context.Context, assetSensorID uuid.UUID, limit int) ([]*IoTSensorReadingWithDetails, error)
 	GetBySensorTypeID(ctx context.Context, sensorTypeID uuid.UUID, limit int) ([]*IoTSensorReadingWithDetails, error)
 	GetByMacAddress(ctx context.Context, macAddress string, limit int) ([]*IoTSensorReadingWithDetails, error)
+	GetAssetSensorsBySensorType(ctx context.Context, sensorTypeID uuid.UUID) ([]dto.AssetSensorLocationInfo, error)
 	List(ctx context.Context, req IoTSensorReadingListRequest) ([]*IoTSensorReadingWithDetails, int, error)
 	Update(ctx context.Context, reading *entity.IoTSensorReading) error
 	Delete(ctx context.Context, id uuid.UUID) error
@@ -85,6 +88,7 @@ type IoTSensorReadingRepository interface {
 	CreateFlexible(ctx context.Context, reading *entity.IoTSensorReadingFlexible) error
 	CreateFlexibleBatch(ctx context.Context, readings []*entity.IoTSensorReadingFlexible) error
 	GetFlexibleByID(ctx context.Context, id uuid.UUID) (*entity.IoTSensorReadingFlexible, error)
+	ListFlexible(ctx context.Context, req IoTSensorReadingListRequest) ([]*entity.IoTSensorReadingFlexible, int, error)
 	ParseTextToFlexibleReading(ctx context.Context, textData, assetSensorID, sensorTypeID, macAddress string) (*entity.IoTSensorReadingFlexible, error)
 	GetDB() *sql.DB
 }
@@ -1398,12 +1402,158 @@ func (r *iotSensorReadingRepository) GetFlexibleByAssetSensorID(ctx context.Cont
 	return readings, nil
 }
 
+// ListFlexible retrieves flexible IoT sensor readings with filtering and pagination
+func (r *iotSensorReadingRepository) ListFlexible(ctx context.Context, req IoTSensorReadingListRequest) ([]*entity.IoTSensorReadingFlexible, int, error) {
+	// Validate pagination
+	if req.Page <= 0 {
+		req.Page = 1
+	}
+	if req.PageSize <= 0 {
+		req.PageSize = 10
+	}
+	if req.PageSize > 100 {
+		req.PageSize = 100
+	}
+
+	// Check if the context has tenant information for multi-tenancy
+	tenantID, hasTenantContext := common.GetTenantID(ctx)
+	role, hasRoleContext := common.GetUserRole(ctx)
+
+	// Build WHERE conditions
+	var conditions []string
+	var args []interface{}
+	argCount := 0
+
+	// Tenant filtering
+	if hasRoleContext && (role == "SuperAdmin" || role == "SUPERADMIN") && !hasTenantContext {
+		// SuperAdmin without tenant context - no tenant filter (access all data)
+	} else {
+		// Regular users or SuperAdmin with tenant context - filter by tenant
+		argCount++
+		conditions = append(conditions, fmt.Sprintf("tenant_id = $%d", argCount))
+		args = append(args, tenantID)
+	}
+
+	// Asset sensor filtering
+	if req.AssetSensorID != nil {
+		argCount++
+		conditions = append(conditions, fmt.Sprintf("asset_sensor_id = $%d", argCount))
+		args = append(args, *req.AssetSensorID)
+	}
+
+	// Sensor type filtering
+	if req.SensorTypeID != nil {
+		argCount++
+		conditions = append(conditions, fmt.Sprintf("sensor_type_id = $%d", argCount))
+		args = append(args, *req.SensorTypeID)
+	}
+
+	// MAC address filtering
+	if req.MacAddress != nil {
+		argCount++
+		conditions = append(conditions, fmt.Sprintf("mac_address = $%d", argCount))
+		args = append(args, *req.MacAddress)
+	}
+
+	// Location filtering
+	if req.LocationID != nil {
+		argCount++
+		conditions = append(conditions, fmt.Sprintf("location_id = $%d", argCount))
+		args = append(args, *req.LocationID)
+	}
+
+	// Time range filtering
+	if req.FromTime != nil {
+		argCount++
+		conditions = append(conditions, fmt.Sprintf("reading_time >= $%d", argCount))
+		args = append(args, *req.FromTime)
+	}
+
+	if req.ToTime != nil {
+		argCount++
+		conditions = append(conditions, fmt.Sprintf("reading_time <= $%d", argCount))
+		args = append(args, *req.ToTime)
+	}
+
+	// Build WHERE clause
+	whereClause := ""
+	if len(conditions) > 0 {
+		whereClause = "WHERE " + strings.Join(conditions, " AND ")
+	}
+
+	// Count query
+	countQuery := fmt.Sprintf("SELECT COUNT(*) FROM iot_sensor_readings %s", whereClause)
+	var total int
+	err := r.DB.QueryRowContext(ctx, countQuery, args...).Scan(&total)
+	if err != nil {
+		return nil, 0, fmt.Errorf("failed to count flexible readings: %w", err)
+	}
+
+	// Data query with pagination
+	offset := (req.Page - 1) * req.PageSize
+	dataQuery := fmt.Sprintf(`
+		SELECT id, tenant_id, asset_sensor_id, sensor_type_id, mac_address,
+			   location_id, location_name, measurement_type, measurement_label,
+			   measurement_unit, numeric_value, text_value, boolean_value,
+			   data_source, original_field_name, reading_time, created_at, updated_at
+		FROM iot_sensor_readings
+		%s
+		ORDER BY reading_time DESC, created_at DESC
+		LIMIT $%d OFFSET $%d`,
+		whereClause, argCount+1, argCount+2)
+
+	// Add pagination args
+	args = append(args, req.PageSize, offset)
+
+	rows, err := r.DB.QueryContext(ctx, dataQuery, args...)
+	if err != nil {
+		return nil, 0, fmt.Errorf("failed to query flexible readings: %w", err)
+	}
+	defer rows.Close()
+
+	var readings []*entity.IoTSensorReadingFlexible
+	for rows.Next() {
+		var reading entity.IoTSensorReadingFlexible
+		err := rows.Scan(
+			&reading.ID,
+			&reading.TenantID,
+			&reading.AssetSensorID,
+			&reading.SensorTypeID,
+			&reading.MacAddress,
+			&reading.LocationID,
+			&reading.LocationName,
+			&reading.MeasurementType,
+			&reading.MeasurementLabel,
+			&reading.MeasurementUnit,
+			&reading.NumericValue,
+			&reading.TextValue,
+			&reading.BooleanValue,
+			&reading.DataSource,
+			&reading.OriginalFieldName,
+			&reading.ReadingTime,
+			&reading.CreatedAt,
+			&reading.UpdatedAt,
+		)
+		if err != nil {
+			return nil, 0, fmt.Errorf("failed to scan flexible reading: %w", err)
+		}
+		readings = append(readings, &reading)
+	}
+
+	if err = rows.Err(); err != nil {
+		return nil, 0, fmt.Errorf("row iteration error: %w", err)
+	}
+
+	return readings, total, nil
+}
+
 // scanRowsToResults scans database rows into IoTSensorReadingWithDetails structure
 func (r *iotSensorReadingRepository) scanRowsToResults(rows *sql.Rows) ([]*IoTSensorReadingWithDetails, error) {
 	var readings []*IoTSensorReadingWithDetails
 
 	for rows.Next() {
 		var reading IoTSensorReadingWithDetails
+		reading.IoTSensorReading = &entity.IoTSensorReading{}
 		var measurementTypesJSON []byte
 
 		err := rows.Scan(
@@ -1478,10 +1628,10 @@ func (r *iotSensorReadingRepository) List(ctx context.Context, req IoTSensorRead
 	argIndex := 1
 
 	// Tenant filtering
-	if hasRoleContext && role == "SuperAdmin" && !hasTenantContext {
-		// SuperAdmin without tenant context - no tenant filtering
+	if hasRoleContext && (role == "SuperAdmin" || role == "SUPERADMIN") && !hasTenantContext {
+		// SuperAdmin tanpa tenant context - tidak ada filter tenant
 	} else {
-		// Regular users or SuperAdmin with tenant ID - filter by tenant
+		// Regular users atau SuperAdmin dengan tenant ID - filter by tenant
 		conditions = append(conditions, fmt.Sprintf("isr.tenant_id = $%d", argIndex))
 		args = append(args, tenantID)
 		argIndex++
@@ -1553,12 +1703,10 @@ func (r *iotSensorReadingRepository) List(ctx context.Context, req IoTSensorRead
 	dataQuery := fmt.Sprintf(`
 		WITH reading_details AS (
 			SELECT 
-				isr.*,
-				asn.id as asn_id, asn.asset_id as asn_asset_id, asn.name as asn_name,
-				asn.status as asn_status, asn.configuration as asn_configuration,
-				st.id as st_id, st.name as st_name, st.description as st_description,
-				st.manufacturer as st_manufacturer, st.model as st_model,
-				st.version as st_version, st.is_active as st_is_active
+				isr.id, isr.tenant_id, isr.asset_sensor_id, isr.sensor_type_id, isr.mac_address,
+				isr.location_id, isr.location_name, isr.reading_time, isr.created_at, isr.updated_at,
+				asn.id as asn_id, asn.asset_id as asn_asset_id, asn.name as asn_name, asn.status as asn_status, asn.configuration as asn_configuration,
+				st.id as st_id, st.name as st_name, st.description as st_description, st.manufacturer as st_manufacturer, st.model as st_model, st.version as st_version, st.is_active as st_is_active
 			FROM iot_sensor_readings isr
 			JOIN asset_sensors asn ON isr.asset_sensor_id = asn.id
 			JOIN sensor_types st ON isr.sensor_type_id = st.id
@@ -1567,7 +1715,28 @@ func (r *iotSensorReadingRepository) List(ctx context.Context, req IoTSensorRead
 			LIMIT $%d OFFSET $%d
 		)
 		SELECT 
-			rd.*,
+			reading_details.id,
+			reading_details.tenant_id,
+			reading_details.asset_sensor_id,
+			reading_details.sensor_type_id,
+			reading_details.mac_address,
+			reading_details.location_id,
+			reading_details.location_name,
+			reading_details.reading_time,
+			reading_details.created_at,
+			reading_details.updated_at,
+			reading_details.asn_id,
+			reading_details.asn_asset_id,
+			reading_details.asn_name,
+			reading_details.asn_status,
+			reading_details.asn_configuration,
+			reading_details.st_id,
+			reading_details.st_name,
+			reading_details.st_description,
+			reading_details.st_manufacturer,
+			reading_details.st_model,
+			reading_details.st_version,
+			reading_details.st_is_active,
 			json_agg(
 				json_build_object(
 					'id', smt.id,
@@ -1596,16 +1765,14 @@ func (r *iotSensorReadingRepository) List(ctx context.Context, req IoTSensorRead
 					)
 				)
 			) as measurement_types
-		FROM reading_details rd
-		LEFT JOIN sensor_measurement_types smt ON smt.sensor_type_id = rd.st_id
-		GROUP BY rd.id, rd.tenant_id, rd.asset_sensor_id, rd.sensor_type_id, rd.mac_address,
-				rd.location_id, rd.location_name, rd.measurement_type, rd.measurement_label, 
-				rd.measurement_unit, rd.numeric_value, rd.text_value, rd.boolean_value,
-				rd.data_source, rd.original_field_name, rd.reading_time, rd.created_at, rd.updated_at,
-				rd.asn_id, rd.asn_asset_id, rd.asn_name, rd.asn_status, rd.asn_configuration,
-				rd.st_id, rd.st_name, rd.st_description, rd.st_manufacturer, rd.st_model,
-				rd.st_version, rd.st_is_active
-		ORDER BY rd.reading_time DESC`, whereClause, argIndex, argIndex+1)
+		FROM reading_details
+		LEFT JOIN sensor_measurement_types smt ON smt.sensor_type_id = reading_details.st_id
+		GROUP BY reading_details.id, reading_details.tenant_id, reading_details.asset_sensor_id, reading_details.sensor_type_id, reading_details.mac_address,
+			reading_details.location_id, reading_details.location_name, reading_details.reading_time, reading_details.created_at, reading_details.updated_at,
+			reading_details.asn_id, reading_details.asn_asset_id, reading_details.asn_name, reading_details.asn_status, reading_details.asn_configuration,
+			reading_details.st_id, reading_details.st_name, reading_details.st_description, reading_details.st_manufacturer, reading_details.st_model,
+			reading_details.st_version, reading_details.st_is_active
+		ORDER BY reading_details.reading_time DESC`, whereClause, argIndex, argIndex+1)
 
 	// Add pagination args
 	paginationArgs := append(args, req.PageSize, offset)
@@ -1622,6 +1789,86 @@ func (r *iotSensorReadingRepository) List(ctx context.Context, req IoTSensorRead
 	}
 
 	return readings, totalCount, nil
+}
+
+// GetAssetSensorsBySensorType retrieves asset sensors with location information by sensor type
+func (r *iotSensorReadingRepository) GetAssetSensorsBySensorType(ctx context.Context, sensorTypeID uuid.UUID) ([]dto.AssetSensorLocationInfo, error) {
+	tenantID, hasTenantID := common.GetTenantID(ctx)
+	isSuperAdmin := common.IsSuperAdmin(ctx)
+
+	// For regular users, tenant ID is required. For SuperAdmin, it's optional
+	if !hasTenantID && !isSuperAdmin {
+		return nil, fmt.Errorf("tenant ID is required for this operation")
+	}
+
+	var query string
+	var args []interface{}
+
+	if isSuperAdmin && !hasTenantID {
+		// SuperAdmin without tenant ID can access all sensors
+		query = `
+			SELECT 
+				asn.id as asset_sensor_id,
+				asn.name as asset_sensor_name,
+				a.id as asset_id,
+				a.name as asset_name,
+				l.id as location_id,
+				l.name as location_name
+			FROM asset_sensors asn
+			JOIN assets a ON asn.asset_id = a.id
+			JOIN locations l ON a.location_id = l.id
+			WHERE asn.sensor_type_id = $1
+			AND asn.status = 'active'
+			ORDER BY l.name, a.name, asn.name`
+		args = []interface{}{sensorTypeID}
+	} else {
+		// Regular users or SuperAdmin with tenant ID - filter by tenant
+		query = `
+			SELECT 
+				asn.id as asset_sensor_id,
+				asn.name as asset_sensor_name,
+				a.id as asset_id,
+				a.name as asset_name,
+				l.id as location_id,
+				l.name as location_name
+			FROM asset_sensors asn
+			JOIN assets a ON asn.asset_id = a.id
+			JOIN locations l ON a.location_id = l.id
+			WHERE asn.sensor_type_id = $1
+			AND asn.tenant_id = $2
+			AND asn.status = 'active'
+			ORDER BY l.name, a.name, asn.name`
+		args = []interface{}{sensorTypeID, tenantID}
+	}
+
+	rows, err := r.DB.QueryContext(ctx, query, args...)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get asset sensors by sensor type: %w", err)
+	}
+	defer rows.Close()
+
+	var result []dto.AssetSensorLocationInfo
+	for rows.Next() {
+		var info dto.AssetSensorLocationInfo
+		err := rows.Scan(
+			&info.AssetSensorID,
+			&info.AssetSensorName,
+			&info.AssetID,
+			&info.AssetName,
+			&info.LocationID,
+			&info.LocationName,
+		)
+		if err != nil {
+			return nil, fmt.Errorf("failed to scan asset sensor location info: %w", err)
+		}
+		result = append(result, info)
+	}
+
+	if err = rows.Err(); err != nil {
+		return nil, fmt.Errorf("error iterating rows: %w", err)
+	}
+
+	return result, nil
 }
 
 func (r *iotSensorReadingRepository) GetDB() *sql.DB {
